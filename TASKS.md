@@ -1,5 +1,23 @@
 # Crit 2 — Inari redesign — task plan
 
+> **Shipped 12 August 2026, before the 07:00 AEST cutoff.** All four pages are built and live at
+> the deployed URL, `pnpm check` is green (typecheck, build, oxlint, stylelint,
+> 65 tests), `pnpm check:evidence` is green, linkinator is green, and the CI
+> `check` and `deploy` jobs both passed.
+>
+> The one thing this plan did not anticipate is the decision that ended up
+> shaping every page: the site is built as a **press sheet**. Inari's menu PDF
+> is press-ready print artwork, and rather than strip that away the redesign
+> quotes it — the printer's slug carries provenance, the sampled colour bar is
+> the palette legend, crop marks close a block, folios number the book. The
+> print furniture is the citation apparatus, which is how "every factual claim
+> carries a source" became visible design instead of fine print. The reasoning
+> is at the top of `src/styles/tokens.css`; the moments are in `PROCESS.md`.
+>
+> Still open, deliberately: the before/after screenshots in §7 (useful at the
+> crit, not required to ship) and a Lighthouse/axe pass, which the spec asks
+> for in a later week.
+
 **Cutoff:** Wed 12 August 2026, 07:00 AEST. The CI sweep runs 15 minutes after.
 Green checks at the sweep are worth half the shipped mark, and *still running
 counts as not green*.
@@ -168,11 +186,17 @@ placeholder stubs — this section covers the shell only, not page content.**
 
 ## Section 1 — Data and assets
 
-**Status (2026-08-12): nothing in this section is written yet — there is no
-`src/data/` directory at all.** Every price, description, marker and the
-Corn Cobs/Corn Ribs inconsistency below have been re-verified against the PDF
-directly (not the earlier off-a-render read), so 1.1–1.4 are ready to
-transcribe, but none of it exists as code. This is the actual next task.
+**Status (2026-08-12): done. `src/data/menu.ts` exists and is the single source
+for every dish fact on the site.** All 17 dishes were transcribed from the PDF
+and then re-verified against a 110dpi render of both pages
+(`magick -density 110 inari-menu.pdf[0]`) rather than trusting the earlier
+off-a-render read. That check confirmed every price in Appendix C, and
+confirmed the ★ is real — Inari prints it beside six dishes, three of which
+are in this book (Inari Sashimi, Salmon & Scallop, Naked Crispy Salmon). It
+also confirmed "Signature" is a separate printed *section* (Pork Belly Glaze,
+Patagonian Toothfish), not a synonym for the star; conflating the two would
+have been a factual error. The Corn Cobs / Corn Ribs inconsistency ships
+unresolved, with the menu page saying why.
 
 ### 1.1 `src/data/menu.ts` — transcribe from the PDF
 Source: `https://inari.restaurant/s/inari-menu-25-Jun-1.pdf`. Slug reads
