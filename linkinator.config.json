@@ -1,4 +1,8 @@
 {
   "urlRewriteSearch": "/comp4020-crit2-edwarbudiman/",
-  "urlRewriteReplace": "/"
+  "urlRewriteReplace": "/",
+  "skip": [
+    "^https?://(www\\.)?instagram\\.com/",
+    "^https?://(www\\.)?facebook\\.com/"
+  ]
 }
