@@ -1,3 +1,6 @@
-# esbuild (used by Vite) needs its postinstall to set up its native binary.
+# esbuild (used by Astro/Vite) needs its postinstall to set up its native binary.
+# sharp is Astro's optional image-processing dep (astro:assets); this minimal
+# site has no <Image> usage, so its native build is left disabled.
 allowBuilds:
   esbuild: true
+  sharp: false
