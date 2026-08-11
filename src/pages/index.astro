@@ -881,8 +881,17 @@ const [prepBench, ponzuTray, sashimiTray, pass] = kitchen;
   }
 
   .closing__frame {
-    aspect-ratio: 3 / 4;
+    aspect-ratio: 2 / 3;
   }
+
+  /*
+   * The scrim is left exactly as tokens.css specifies it — full inset, all
+   * four stops. Shortening it to show more of the plate was tried and
+   * reverted: it moves the type up into the 20–45% band of the gradient,
+   * where --color-rule-strong over a pale ceramic measures about 2:1. The
+   * frame is given a taller ratio instead, so the photograph gets its room
+   * from the crop rather than from a weaker scrim. Contrast wins ties.
+   */
 
   .closing__panel {
     position: absolute;
@@ -898,9 +907,12 @@ const [prepBench, ponzuTray, sashimiTray, pass] = kitchen;
     color: var(--color-paper);
   }
 
+  /* Paper, not a muted tint: this line sits in the middle of the scrim's
+     ramp rather than at its dark end, and over a pale ceramic that band is
+     only about 50% ink. Paper clears AA there; --color-rule-strong does not. */
   .closing__note {
     max-width: 34ch;
-    color: var(--color-rule-strong);
+    color: var(--color-paper);
   }
 
   /* ---- Wider than a phone ------------------------------------------------- */
