@@ -19,6 +19,7 @@
     "astro": "^5.1.0",
     "jsdom": "^29.1.1",
     "oxlint": "^1.75.0",
+    "sharp": "^0.34.4",
     "stylelint": "^17.14.1",
     "stylelint-config-standard": "^40.0.0",
     "typescript": "^6.0.3",

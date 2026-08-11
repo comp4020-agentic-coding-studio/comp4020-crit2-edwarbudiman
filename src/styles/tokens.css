@@ -1,134 +1,281 @@
 /*
  * Design tokens — Inari redesign (crit 2)
  *
- * Source priority (decision-context §2): logo/brand assets > brand material
- * > the physical room > current site content > new tokens invented here.
- * Every value below says where it came from. Nothing here is an eyeballed
- * guess — colours were sampled from actual pixels with ImageMagick
- * (`magick <file> -resize 100x100 -colors N -unique-colors txt:-`), contrast
- * was measured with the WCAG relative-luminance formula, not eyeballed.
+ * ── The world: THE PRESS SHEET ───────────────────────────────────────────
+ *
+ * Inari publishes its menu as a press-ready print artifact: two A3 landscape
+ * spreads carrying crop marks, registration crosshairs, a CMYK colour bar
+ * down the left edge, a greyscale step wedge along the bottom, and the
+ * printer's slug "inari menu 25 Jun.pdf 1 25/6/2026 14:09". That file is
+ * served to phones as the restaurant's menu.
+ *
+ * This redesign does not hide that. It quotes it. Every piece of print
+ * furniture on this site does the same job its counterpart does on a real
+ * press sheet, and each one is simultaneously a citation of the source:
+ *
+ *   slug line          → provenance. Which document, which revision, when.
+ *   colour bar         → the palette legend, and proof the palette is sampled.
+ *   registration mark  → section anchor. Where two things must line up.
+ *   crop / trim marks  → the edge of the sheet. Where a section ends.
+ *   folio              → which of the book's 16 pages you are on.
+ *   grey step wedge    → the neutral ramp, shown rather than asserted.
+ *
+ * That is the answer to CLAUDE.md's rule that a decorative element must be
+ * able to say what job it does — here the decoration *is* the citation
+ * apparatus, which is the other rule ("every factual claim carries a
+ * source") made visible instead of buried in fine print.
+ *
+ * It is also the guard against the failure the brief names by name. Left
+ * unguarded, "Tradition × Rebellion" yields oversized type + a red accent +
+ * an asymmetric grid, which is the current median restaurant look. Grounding
+ * the world in Inari's own printing artifact means the composition cannot
+ * drift toward a generic Japanese restaurant template: there is no brush
+ * script here, no torii, no rising sun, no cherry blossom. The tradition is
+ * print production; the rebellion is admitting on screen that you are
+ * quoting print, then doing what print could not.
+ *
+ * ── Sourcing ─────────────────────────────────────────────────────────────
+ * Source priority per decision-context §2: logo/brand assets > brand
+ * material > the room > current site > new values. Colours below were
+ * sampled from actual pixels with ImageMagick, and contrast was computed
+ * with the WCAG relative-luminance formula (script in /tmp, ratios recorded
+ * inline). Nothing here is an eyeballed guess.
  */
 
 :root {
-  /* ---- Colour: brand ------------------------------------------------- */
+  /* ---- Brand ----------------------------------------------------------- */
 
-  /* Inari's own booking widget config (?colors=hex%2Cc41411), Appendix A.
-     Confirmed as the logo's dominant red: sampling inari-logo.webp's fill
-     gives #BD0707/#C42827 depending on webp compression noise — #C41411
-     sits inside that cluster, so the published widget value is trustworthy
-     and is what we use verbatim rather than re-sampling a lossy asset. */
+  /* Inari's own booking widget config (?colors=hex%2Cc41411) — an exact,
+     published, device-RGB value straight from the restaurant. Preferred over
+     re-sampling the PDF because the PDF is CMYK: rendering its solid red
+     panels without an ICC profile yields #9d0320, a darker and pinker red
+     that is a colour-conversion artifact, not Inari's red. Corroborated
+     against inari-logo.webp, whose fill clusters #bd0707–#c42827 under webp
+     compression noise, with #c41411 sitting inside that cluster. */
   --color-red: #c41411;
 
-  /* Pure white and near-black, used only as the two text colours that are
-     safe on red (see contrast notes below) and as the mask/wordmark colour
-     in the logo itself (inari-logo.webp is red-on-white line art). */
-  --color-white: #fff;
+  /* The deep red Inari's press sheet actually fills its boxed panels with,
+     sampled from the solid "Emperors Feast" and "Vegetarian Set" panels
+     (#9d0320, consistent across both). Kept as a distinct token rather than
+     replacing the brand red: it is what large flooded areas want, because
+     #c41411 at full-bleed vibrates against white type, and it measures
+     8.51:1 with white against the brand red's 6.08:1. Panels only, never
+     small marks — the brand red stays the brand red. */
+  --color-red-deep: #9d0320;
 
-  /* Ink: a warm near-black sampled from the photography's own shadow tone
-     rather than true #000 — main-potagonian-tootfish.webp and chef-prep.webp
-     both crush to ~#040301/#130904/#130f0c in their darkest pixels. Used as
-     the primary text/background dark, one step warmer than pure black. */
+  /* Warm near-black, sampled from the photography's own darkest pixels
+     rather than set to #000 — main-potagonian-tootfish.webp and
+     chef-prep.webp crush to ~#040301/#130904/#130f0c. */
   --color-ink: #150f0b;
 
-  /* ---- Colour: sampled from the photography ---------------------------- */
-
-  /* Moss/olive: the ceramic plate under the toothfish
-     (main-potagonian-tootfish.webp), sampled directly — #7e8124. A real
-     plate colour from the room's own tableware, not an invented "Japanese
-     green". Accent only: 3.67:1 on cream fails AA for body text (see
-     contrast notes), so it is restricted to large text, borders, tags. */
-  --color-moss: #7e8124;
-
-  /* Warm timber: the wooden knife-handle in chef-prep.webp, sampled
-     directly — #a26b3f. Same restriction as moss: decorative/large-text use
-     only, not body copy on light backgrounds. */
-  --color-timber: #a26b3f;
-
-  /* Cream: the pale ceramic rim on the same toothfish plate
-     (sampled #cac1a3), lightened for use as a page background — a tint of
-     the sampled ceramic, not an arbitrary off-white. */
+  /* ---- Paper ------------------------------------------------------------
+   * The press sheet's own stock samples as pure #ffffff. On a backlit screen
+   * pure white reads as "no decision" rather than as paper, so the page
+   * surface is warmed by about 2% — enough to read as stock, not enough to
+   * be a cream. The deeper tone is the second surface: reversed panels,
+   * inset blocks, the footer.
+   */
+  --color-paper: #fbf9f6;
+  --color-paper-2: #f2ede3;
   --color-cream: #f6f0e6;
 
-  /* ---- Contrast — measured, not eyeballed ------------------------------
-   * WCAG 2.1 relative-luminance contrast ratio, computed directly (see
-   * PROCESS.md for the one-off script). AA requires 4.5:1 for body text,
-   * 3:1 for large text (≥24px / ≥19px bold) and UI components.
+  /* Hairlines. Trim rules, table rules, dividers. 1.46:1 on paper — this is
+     deliberately below any text threshold because it is never text; a
+     printer's rule is meant to be faint. Anything that must be *read* uses
+     --color-ink-muted instead. */
+  --color-rule: #d8d0c2;
+  --color-rule-strong: #b9ae99;
+
+  /* Secondary text. Warm, desaturated from the ink rather than a neutral
+     grey, so it belongs to the same family as the paper. 5.91:1 on paper and
+     5.32:1 on cream — both clear AA for body text, which is the point:
+     "secondary" must not mean "unreadable". */
+  --color-ink-muted: #6b5f52;
+
+  /* Secondary text ON red. Tinted from the red's own hue rather than greyed,
+     per the craft floor. 4.67:1 on --color-red — AA body. */
+  --color-on-red-muted: #ffd9d6;
+
+  /* ---- Accents, sampled from the photography ---------------------------- */
+
+  /* The olive ceramic plate under the toothfish (#7e8124) and the wooden
+     knife handle in chef-prep.webp (#a26b3f). Real tableware and real
+     kitchen timber, not an invented "Japanese green". Both measure below
+     4.5:1 on paper (3.95:1 and 4.24:1), so both are restricted to large
+     text, borders and tags — never body copy on a light ground. */
+  --color-moss: #7e8124;
+  --color-timber: #a26b3f;
+
+  /* ---- The colour bar ---------------------------------------------------
+   * Sampled directly from the bar printed down the left edge of page 1 of
+   * Inari's menu PDF, in the order it prints. It ships as a real component:
+   * the site's palette legend, and the most literal possible proof that the
+   * palette was taken from the artifact rather than chosen. These are the
+   * source document's process colours — they are quoted, not used as UI.
+   */
+  --bar-red: #f50000;
+  --bar-green: #00a200;
+  --bar-blue: #0000b3;
+  --bar-yellow: #f0ef00;
+  --bar-magenta: #f400f4;
+  --bar-cyan: #00f0f0;
+  --bar-grey: #b2b2b2;
+  --bar-black: #0a0a0a;
+
+  /* The greyscale step wedge along the bottom of the same sheet, sampled in
+     print order (dark → light). */
+  --wedge-1: #191919;
+  --wedge-2: #656565;
+  --wedge-3: #a5a5a5;
+  --wedge-4: #d1d1d1;
+  --wedge-5: #e9e9e9;
+  --wedge-6: #f4f4f4;
+  --wedge-7: #fff;
+
+  /* ---- Contrast, measured ------------------------------------------------
+   * WCAG 2.1 relative luminance. AA = 4.5:1 body, 3:1 large text and UI.
    *
-   *   white  on red   (#fff on #c41411)   6.08:1  — passes AA body text.
-   *   cream  on red   (#f6f0e6 on #c41411) 5.36:1  — passes AA body text.
-   *   black  on red   (#000 on #c41411)   3.46:1  — FAILS AA body text.
-   *   red    on ink   (#c41411 on #150f0b) 3.12:1  — large text/UI only.
-   *   moss   on cream (#7e8124 on #f6f0e6) 3.67:1  — large text/UI only.
-   *   moss   on ink   (#7e8124 on #150f0b) 4.56:1  — passes AA body text.
-   *   timber on cream (#a26b3f on #f6f0e6) 3.93:1  — large text/UI only.
-   *   ink    on cream (#150f0b on #f6f0e6) 16.7:1  — passes everywhere.
+   *   ink        on paper      18.08:1  PASS everywhere
+   *   ink        on cream      16.29:1  PASS everywhere
+   *   ink-muted  on paper       5.91:1  PASS body
+   *   ink-muted  on cream       5.32:1  PASS body
+   *   red        on paper       5.78:1  PASS body
+   *   red        on cream       5.21:1  PASS body
+   *   white      on red         6.08:1  PASS body
+   *   paper      on red         5.78:1  PASS body
+   *   on-red-muted on red       4.67:1  PASS body
+   *   black      on red         3.46:1  FAIL body — never do this
+   *   white      on red-deep    8.51:1  PASS body
+   *   paper      on ink        18.08:1  PASS everywhere
+   *   red        on ink         3.13:1  large text / UI only
+   *   moss       on paper       3.95:1  large text / UI only
+   *   moss       on ink         4.57:1  PASS body
+   *   timber     on paper       4.24:1  large text / UI only
    *
-   * Rule that follows: text on red is always white or cream, never black.
-   * Moss and timber are accents (borders, tags, large display type), never
-   * small body copy on a light background. This is also why any text over
-   * a photograph needs a scrim (§0.4) — none of the photographed tones
-   * above are safe under small white or dark text on their own.
+   * Rules that follow: text on red is white, paper, or --color-on-red-muted
+   * — never black. Moss and timber never carry small body copy on a light
+   * ground. And no text sits on a photograph without a scrim; unscrimmed
+   * white-on-sushi is the original site's worst legibility fault, and
+   * reproducing it would undercut the whole critique.
    */
 
-  /* ---- Typography ------------------------------------------------------ */
+  /* Scrim for any text over photography. Two stops, both from the ink rather
+     than from black, so the tint stays in the paper's warm family. */
+  --scrim: linear-gradient(
+    to top,
+    rgb(21 15 11 / 88%) 0%,
+    rgb(21 15 11 / 72%) 38%,
+    rgb(21 15 11 / 25%) 72%,
+    rgb(21 15 11 / 0%) 100%
+  );
 
-  /* The original site's own type, identified per project-description §3.3
-     ("if the original brand typeface can be identified... it should be
-     preferred") by fetching inari.restaurant's own stylesheet rather than
-     guessing: Adobe Fonts "Uchiyama", a brush-calligraphy face, for
-     display, and "Louis"/"Louis Bold" for body. Both are Typekit-licensed
-     to Squarespace's site, not embeddable on a plain static GitHub Pages
-     site without our own Adobe Fonts kit — so project-description §3.3's
-     fallback applies: "a compatible alternative should be selected by
-     comparing its proportions, character, weight, and overall personality
-     with the existing identity." Uchiyama is also exactly the "brush or
-     decorative Asian-style font" the brief and decision-context §5 reject
-     by name, so it would be the wrong direction even if it were licensable.
-     The logo's own wordmark is a plain geometric block-cap sans with no
-     brush character, which is the actual brand signal to follow.
+  /* ---- Typography --------------------------------------------------------
+   * The original's own faces were identified rather than guessed, by
+   * fetching inari.restaurant's stylesheet: Adobe Fonts "Uchiyama" for
+   * display and "Louis" for body. Both are Typekit-licensed to Squarespace
+   * and not embeddable here, so project-description §3.3's fallback applies
+   * — pick a compatible alternative by proportion, character and weight.
+   * Uchiyama is in any case the exact "brush or decorative Asian-style font"
+   * that decision-context §5 rejects by name.
    *
-   * Display: Fraunces — a serif with real personality (soft, slightly
-   * wonky curves) without being a script or an "Asian" pastiche. Pairs
-   * "tradition" (serif) with "rebellion" (its irregular, bouncy detailing)
-   * per decision-context §7, and it is not Uchiyama.
-   * Functional: Inter — a highly-legible humanist sans for body copy, UI,
-   * prices and dietary tags at small sizes. Loaded in Layout.astro (§0.5).
+   * The actual brand signal is in the mark: "INARI" is set vertically in
+   * chunky, hand-cut block capitals with slightly uneven strokes and softened
+   * terminals — irregular, not geometric-precise. The menu's own section
+   * headings ("COLD STARTERS", "MAKIMONO") are heavy and bouncy, with
+   * baselines that refuse to sit still.
+   *
+   * Display: Bricolage Grotesque. A contemporary grotesque built with
+   * deliberate irregularity — mismatched terminals, tight apertures, an
+   * optical-size axis — which is the same "wrong on purpose" energy as the
+   * logo's lettering, arrived at without a single brush stroke. It is also
+   * emphatically not the safe editorial serif that makes a restaurant site
+   * read as templated.
+   *
+   * Functional: Inter, for running text, forms and interface.
+   *
+   * Furniture: JetBrains Mono, and only where a press sheet would actually
+   * set type in a monospace — the slug line, folios, prices, marker codes,
+   * colour-bar labels. Measurement and machine output, never prose. Using a
+   * mono as a costume for "technical" is exactly what the craft floor bans.
    */
-  --font-display: "Fraunces", "Iowan Old Style", "Georgia", "Times New Roman", serif;
-  --font-functional: "Inter", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto",
-    "Helvetica", "Arial", sans-serif;
+  --font-display: "Bricolage Grotesque", "Archivo", "Helvetica Neue", arial, sans-serif;
+  --font-functional: "Inter", -apple-system, blinkmacsystemfont, "Segoe UI", roboto,
+    helvetica, arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, sfmono-regular, "SF Mono", menlo,
+    consolas, monospace;
 
-  /* Type scale: three display steps (h1/h2/h3) plus the running-text
-     measure. Fluid via clamp() so the display sizes track viewport width
-     instead of jumping at a breakpoint; -0.03em tracking on the display
-     face per the craft floor (Fraunces gets bouncier, not tighter, past
-     -0.04em). --measure caps body copy at a readable line length. */
-  --text-display-1: clamp(2.5rem, 2rem + 2.5vw, 4.25rem);
-  --text-display-2: clamp(1.75rem, 1.5rem + 1.2vw, 2.5rem);
-  --text-display-3: 1.375rem;
+  /* Fluid display steps. Ceiling is 6rem per the craft floor; the press-sheet
+     world wants the top step to actually reach it, because a sheet's own
+     section headings are set large. Tracking floor is -0.04em and we sit
+     inside it at -0.03em, where Bricolage still reads. */
+  --text-display-1: clamp(2.75rem, 1.9rem + 4.2vw, 6rem);
+  --text-display-2: clamp(1.9rem, 1.5rem + 2vw, 3.25rem);
+  --text-display-3: clamp(1.3rem, 1.18rem + 0.6vw, 1.75rem);
   --tracking-display: -0.03em;
-  --measure: 68ch;
 
-  /* ---- Spacing ----------------------------------------------------------
-   * 8px base scale, generous at the top end on purpose — decision-context
-   * §6: negative space is an active part of the composition, not filler
-   * used because the photo library is limited (§8).
+  /* The furniture voice: small, uppercase, widely tracked mono. One size —
+     print furniture does not have a type scale, it has a caption size. */
+  --text-furniture: 0.6875rem;
+  --tracking-furniture: 0.14em;
+
+  /* Body measure, inside the 65–75ch band. */
+  --measure: 68ch;
+  --measure-tight: 46ch;
+
+  /* ---- Spacing -----------------------------------------------------------
+   * 8px base, generous at the top end. Negative space is an active part of
+   * the composition (decision-context §6), and on a press sheet the margin
+   * is a real, specified thing rather than leftover room.
    */
-  --space-1: 0.25rem; /* 4px  — tight inline gaps */
-  --space-2: 0.5rem; /* 8px  */
-  --space-3: 0.75rem; /* 12px */
-  --space-4: 1rem; /* 16px — base */
-  --space-5: 1.5rem; /* 24px */
-  --space-6: 2rem; /* 32px */
-  --space-8: 3rem; /* 48px */
-  --space-10: 4rem; /* 64px */
-  --space-12: 6rem; /* 96px  — section padding */
-  --space-16: 9rem; /* 144px — large negative-space breaks */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-8: 3rem;
+  --space-10: 4rem;
+  --space-12: 6rem;
+  --space-16: 9rem;
 
   /* ---- Shape -------------------------------------------------------------
-   * One radius, echoing the logo's own rounded-square badge shape
-   * (inari-logo.webp) so UI chrome (cards, buttons) reads as the same
-   * family as the mark rather than an unrelated system default.
+   * One radius, echoing the logo's rounded-rectangle badge, and inside the
+   * craft floor's 12–16px card band. --radius-sm is for small controls only.
+   *
+   * Print geometry follows: the hairline is 1px at every density on purpose,
+   * because a trim rule that thickens stops reading as a trim rule.
    */
-  --radius: 0.75rem;
+  --radius: 0.875rem;
+  --radius-sm: 0.375rem;
+  --hairline: 1px;
+  --trim-gap: var(--space-3);
+  --mark-size: 1.125rem;
+
+  /* ---- Elevation ---------------------------------------------------------
+   * Paper lifting off a surface: offset plus soft blur, never a zero-offset
+   * halo. Elevation is declared once — a card takes a shadow or a border,
+   * not both.
+   */
+  --shadow-sheet: 0 1px 2px rgb(21 15 11 / 5%), 0 10px 28px -10px rgb(21 15 11 / 14%);
+  --shadow-lift: 0 2px 6px rgb(21 15 11 / 7%), 0 22px 48px -14px rgb(21 15 11 / 22%);
+
+  /* ---- Motion ------------------------------------------------------------
+   * One authored moment: the page turn. Everything else is a state change
+   * measured in ~150ms. Exponential ease-out from an already-visible
+   * default, so nothing depends on animation to become readable.
+   */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 140ms;
+  --dur: 320ms;
+  --dur-slow: 560ms;
+
+  /* Sheet width. Wide enough that a two-column spread reads as a spread. */
+  --container: 78rem;
+
+  /* Live height of the sticky header, measured and written back by
+     Layout.astro. Anything that sticks below the header offsets by this
+     rather than by a guess: the nav wraps to two rows at 390px, so a
+     hard-coded offset leaves a second sticky element hidden behind it. */
+  --header-h: 4.5rem;
 }

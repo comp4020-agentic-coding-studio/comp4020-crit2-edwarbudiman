@@ -1,12 +1,1022 @@
 ---
+/*
+ * Home — the cover sheet.
+ *
+ * The world is documented at the top of src/styles/tokens.css: this site
+ * quotes Inari's own press-ready menu PDF rather than hiding it. A cover is
+ * the one page of a press sheet that is allowed to be mostly margin, so this
+ * page is built as one: a type block and a plate, then a small number of
+ * loud moments separated by a lot of nothing.
+ *
+ * Three decisions worth naming, because each one is a fault of the original
+ * being answered rather than a style preference:
+ *
+ *   1. The hero does NOT set text over a photograph. The original's worst
+ *      legibility fault is unscrimmed white type on busy sushi photography,
+ *      and mitigating it with a scrim would still be reproducing the
+ *      composition. Type and plate sit side by side in register instead. The
+ *      one place text does sit on a photograph is the closing block, which
+ *      carries .scrim — there to show the correct handling exists, once.
+ *   2. Hours and address are the SECOND thing on the page, on the loudest
+ *      surface it has. On inari.restaurant both are footer-only and the site
+ *      never plainly says that lunch is closed. That is the single most
+ *      buried useful fact on the original, so it gets the red band.
+ *   3. Print furniture is used twice (crop marks on the hero plate and the
+ *      closing plate — the start and end of the sheet) and one registration
+ *      mark anchors the brand-statement section. Anything more would be
+ *      costume, which CLAUDE.md bans by name.
+ *
+ * Facts: every publishable fact here is from TASKS.md Appendix A (itself
+ * inari.restaurant) or from src/data/menu.ts (Inari's June 2026 menu PDF).
+ * Dish names, descriptions, prices, dietary markers and the advisory are
+ * quoted and carry data-verbatim; the prose around them is written for this
+ * page, because a run of eight consecutive words from the original's copy
+ * fails the build (spec/crit-2.test.ts).
+ */
+import { Image } from "astro:assets";
+import type { ImageMetadata } from "astro";
+
 import Layout from "../layouts/Layout.astro";
+import RegMark from "../components/RegMark.astro";
+import Star from "../components/Star.astro";
+import {
+  ADVISORY,
+  MARKER_KEY,
+  SOURCE,
+  book,
+  dishById,
+  kitchenPhotos,
+  type DishId,
+} from "../data/menu";
+
+import kitsune from "../assets/photos/inari-logo.webp";
+import heroPhoto from "../assets/photos/makimono-salmon-tuna-eel-4.webp";
+import statementPhoto from "../assets/photos/main-potagonian-tootfish.webp";
+import sashimiPhoto from "../assets/photos/starter-inari-sashimi.webp";
+import nigiriPhoto from "../assets/photos/nigiri-salmon-scallop.webp";
+import crispySalmonPhoto from "../assets/photos/makimono-crispy-salmon.webp";
+import chefPrep from "../assets/photos/chef-prep.webp";
+import chefPonzu from "../assets/photos/chef-cook-ponzu.webp";
+import chefPrep2 from "../assets/photos/chef-prep-2.webp";
+import chefAlone from "../assets/photos/chef-alone.webp";
+import closingPhoto from "../assets/photos/drinks-matcha-tiramisu.webp";
+
+const base = import.meta.env.BASE_URL;
+
+/*
+ * The promotion switch.
+ *
+ * The original runs a dead offer — "20% off … during July" — and a second
+ * copy of the same offer further down the page drops the "during July", so
+ * on 12 August the homepage both advertises an expired promotion and
+ * contradicts itself about when it ran. The fault is not the promotion; it
+ * is that the promotion is hard-coded into the layout twice, so nobody can
+ * take it down without editing the page.
+ *
+ * The fix is one switch and one string, separated from the markup
+ * (decision-context §14): flip `enabled` and the strip appears everywhere it
+ * belongs; leave it off and it is gone. It ships OFF and with empty copy,
+ * because no current Inari promotion is verified and inventing one would be
+ * inventing a fact (CLAUDE.md). The empty `body` is deliberate: the render
+ * below is guarded on it, so a half-configured promo cannot reach the page.
+ */
+const promotion: { enabled: boolean; body: string; href: string; linkText: string } = {
+  enabled: false,
+  body: "",
+  href: "",
+  linkText: "",
+};
+
+/* Hours and address, from TASKS.md Appendix A. Deliberately repeated from
+   the footer rather than referenced from it — a fact stated only in the
+   footer is the fault being fixed, so it is stated in both places. */
+const hours = [
+  { days: "Mon–Thu", time: "5–9pm" },
+  { days: "Fri", time: "5–9.30pm" },
+  { days: "Sat", time: "5–9.30pm" },
+  { days: "Sun", time: "5–9pm" },
+];
+
+/* Astro wants width and height on every image. Deriving the height from the
+   source's own metadata keeps the ratio exact, so a resize can never
+   distort a frame; the visible crop is CSS's job (aspect-ratio on .frame). */
+function frame(src: ImageMetadata, width: number, sizes: string) {
+  const widths = [Math.round(width / 2), width, Math.min(Math.round(width * 1.5), src.width)];
+  return {
+    width,
+    height: Math.round((width * src.height) / src.width),
+    widths: Array.from(new Set(widths)).sort((a, b) => a - b),
+    sizes,
+  };
+}
+
+/* Alt text is written once, per frame, in src/data/menu.ts. Looking it up
+   here rather than retyping it means a photo can never ship with a
+   description invented on this page — and if the data ever loses a frame,
+   the build fails instead of emitting an empty alt. */
+const altByFile = new Map(
+  book.flatMap((page) => page.photos.map((photo) => [photo.file, photo.alt] as const)),
+);
+
+function altFor(file: string): string {
+  const alt = altByFile.get(file);
+  if (!alt) {
+    throw new Error(
+      `No alt text for ${file}.webp in src/data/menu.ts — write it there, not on this page.`,
+    );
+  }
+  return alt;
+}
+
+/* The three dishes shown below are Inari's own starred dishes, taken from
+   the `signature` field — never picked by hand. The guard is the point: if
+   the data changes, the build stops rather than quietly presenting this
+   page's editorial opinion as Inari's star. */
+const picks: Array<{ id: DishId; file: string; src: ImageMetadata }> = [
+  { id: "inari-sashimi", file: "starter-inari-sashimi", src: sashimiPhoto },
+  { id: "salmon-scallop", file: "nigiri-salmon-scallop", src: nigiriPhoto },
+  { id: "naked-crispy-salmon", file: "makimono-crispy-salmon", src: crispySalmonPhoto },
+];
+
+for (const pick of picks) {
+  const dish = dishById(pick.id);
+  if (!dish.signature) {
+    throw new Error(
+      `${pick.id} is not starred in src/data/menu.ts — this section shows only the dishes Inari stars itself.`,
+    );
+  }
+  if (dish.prices.length !== 1) {
+    throw new Error(
+      `${pick.id} is priced more than one way; this section's single-price layout would misreport it.`,
+    );
+  }
+}
+
+/* The four kitchen frames, driven from the data so the set cannot drift.
+   These are not dishes and get no dish caption (TASKS.md §1.4). */
+const kitchenImages: Record<string, ImageMetadata> = {
+  "chef-prep": chefPrep,
+  "chef-cook-ponzu": chefPonzu,
+  "chef-prep-2": chefPrep2,
+  "chef-alone": chefAlone,
+};
+
+const kitchen = kitchenPhotos.map((photo) => {
+  const src = kitchenImages[photo.file];
+  if (!src) {
+    throw new Error(`No import on this page for kitchen photograph ${photo.file}.webp`);
+  }
+  return { ...photo, src };
+});
+
+const [prepBench, ponzuTray, sashimiTray, pass] = kitchen;
 ---
 
-<Layout title="Inari — Japanese restaurant, Canberra">
-  <h1>Inari</h1>
-  <p>
-    Home page content lands in Section 2 of <code>TASKS.md</code> — this stub
-    exists so the nav, routing, and build all resolve while the Menu, Book a
-    Table, and Contact pages are built out first.
-  </p>
+<Layout
+  title="Inari — Japanese dining in Tiger Lane, Canberra"
+  description="Inari is a Japanese restaurant in Canberra Centre: dinner only, seven nights, with locally sourced seafood. Hours, address and a selection of the June 2026 menu."
+>
+  {/* ---- Hero: the cover ------------------------------------------------ */}
+  <section class="hero">
+    <div class="wrap hero__grid">
+      <div class="hero__type">
+        <Image
+          class="hero__mark"
+          src={kitsune}
+          alt=""
+          width={112}
+          height={134}
+          loading="eager"
+        />
+        <h1 class="hero__title">
+          <span class="hero__word">Inari</span>
+          <span class="hero__line">Japanese dining in Tiger Lane, Canberra</span>
+        </h1>
+        <p class="lede measure-tight hero__lede">
+          Named for the Japanese god of rice, and open for dinner only — seven
+          nights, with locally sourced seafood at the centre of the menu.
+        </p>
+        <p class="hero__where">Canberra Centre, 148 Bunda St, Canberra City</p>
+        <div class="hero__actions">
+          <a class="btn btn--primary btn--lg" href={`${base}book/`}>Book a Table</a>
+          <a class="btn btn--lg" href={`${base}menu/`}>See the menu</a>
+        </div>
+      </div>
+
+      {/*
+        The crop marks go on the figure, not on .frame: .frame clips its own
+        overflow so the plate's corners stay rounded, and marks drawn inside
+        it would be clipped away. On a press sheet the trim marks sit outside
+        the image area anyway — that is what makes them trim marks.
+      */}
+      <figure class="hero__figure sheet">
+        <div class="frame hero__frame">
+          <Image
+            src={heroPhoto}
+            alt={altFor("makimono-salmon-tuna-eel-4")}
+            loading="eager"
+            {...frame(heroPhoto, 1200, "(min-width: 1024px) 50vw, 100vw")}
+          />
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  {
+    promotion.enabled && promotion.body && (
+      <aside class="wrap promo" aria-label="Current offer">
+        <p class="promo__body">{promotion.body}</p>
+        {promotion.href && (
+          <a class="promo__link" href={promotion.href}>
+            {promotion.linkText}
+          </a>
+        )}
+      </aside>
+    )
+  }
+
+  {/*
+    ---- Practical info, high and loud -----------------------------------
+    White on --color-red-deep measures 8.51:1 (tokens.css). Nothing in this
+    band uses .lede or .furniture, because both set a dark ink colour that
+    would land black-ish on red — 3.46:1, the one combination tokens.css
+    forbids outright.
+  */}
+  <section class="service" data-on-red>
+    <div class="wrap">
+      <div class="service__head">
+        <h2>Dinner only, seven nights</h2>
+        <p class="service__lede">
+          Service starts at 5pm. There is no lunch service on any day of the
+          week.
+        </p>
+      </div>
+
+      <div class="service__cols">
+        <div class="service__col">
+          <h3>Dinner</h3>
+          <dl class="service__hours">
+            {
+              hours.map((row) => (
+                <div class="service__row">
+                  <dt>{row.days}</dt>
+                  <dd class="service__time">{row.time}</dd>
+                </div>
+              ))
+            }
+          </dl>
+        </div>
+
+        <div class="service__col">
+          <h3>Lunch</h3>
+          <p class="service__note">Closed every day.</p>
+          <p class="service__note">
+            The one exception is a group of ten or more with a reservation made
+            in advance. There are no walk-ins at lunch.
+          </p>
+        </div>
+
+        <div class="service__col">
+          <h3>Where</h3>
+          <address class="service__addr">
+            Canberra Centre, 148 Bunda St<br />
+            Ground level, between Bunda Street and Scotts Crossing<br />
+            Canberra City ACT 2601
+          </address>
+          <p class="service__note">
+            <a href="mailto:hello@inari.restaurant">hello@inari.restaurant</a>
+          </p>
+          <p class="service__note">
+            <a href={`${base}contact/`}>Getting here, and why this site exists</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* ---- Brand statement ------------------------------------------------ */}
+  <section class="section statement">
+    <div class="wrap">
+      {/*
+        A registration mark is where two plates must line up, so it sits on
+        the seam where this section registers against the band above — the
+        one place on this page where a section boundary is drawn at all.
+      */}
+      <div class="statement__anchor">
+        <RegMark size={18} />
+      </div>
+
+      <div class="statement__grid">
+        <div class="statement__body">
+          <h2>Where the name stops being traditional</h2>
+          <p class="lede statement__lede">
+            Inari is named for the Japanese god of rice, and the fox is the
+            restaurant's own mark. That is roughly where the deference to
+            tradition ends.
+          </p>
+          <p class="statement__p">
+            The seafood is sourced locally and the kitchen is not shy with it:
+            Yarra Valley caviar over the oysters, a toothfish marinated three
+            days in caramelised miso, plum sauce and chilli on the nigiri.
+            Inari prints about {SOURCE.totalDishesApprox} dishes across two
+            pages — the menu here gives each photographed dish a page of its
+            own instead.
+          </p>
+        </div>
+
+        <figure class="statement__figure">
+          <div class="frame statement__frame">
+            <Image
+              src={statementPhoto}
+              alt={altFor("main-potagonian-tootfish")}
+              loading="lazy"
+              {...frame(statementPhoto, 1000, "(min-width: 1024px) 45vw, 100vw")}
+            />
+          </div>
+          <figcaption class="figure-note">
+            <span data-verbatim>Patagonian Toothfish</span> —
+            <a href={`${base}menu/#patagonian-toothfish`}>read the page</a>
+          </figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  {/* ---- Selected dishes: Inari's own stars ----------------------------- */}
+  <section class="section--tight picks">
+    <div class="wrap">
+      <div class="picks__head">
+        <h2>Starred on Inari's own menu</h2>
+        <p class="picks__p">
+          Inari prints a small red star beside six dishes on its June 2026
+          menu. These are the three we hold a photograph of; each one opens the
+          menu at its own page.
+        </p>
+      </div>
+
+      <div class="picks__grid">
+        {
+          picks.map((pick) => {
+            const dish = dishById(pick.id);
+            return (
+              <article class="pick">
+                <div class="frame pick__frame">
+                  <Image
+                    src={pick.src}
+                    alt={altFor(pick.file)}
+                    loading="lazy"
+                    {...frame(pick.src, 900, "(min-width: 1024px) 40vw, 100vw")}
+                  />
+                </div>
+                <div class="pick__body">
+                  <h3 class="pick__name">
+                    <a href={`${base}menu/#${pick.id}`}>
+                      <span data-verbatim>{dish.name}</span>
+                    </a>
+                    <Star size={16} />
+                  </h3>
+                  <p class="pick__desc" data-verbatim>{dish.description}</p>
+                  <p class="pick__meta">
+                    <span class="price pick__price">
+                      $<span data-verbatim>{dish.prices[0].amount}</span>
+                    </span>
+                    {
+                      dish.dietary.map((marker) => (
+                        <span class="tag" data-dietary={marker} data-verbatim>
+                          <span aria-hidden="true">{marker}</span>
+                          <span class="visually-hidden">
+                            {MARKER_KEY[marker]} — Inari's dietary marker
+                          </span>
+                        </span>
+                      ))
+                    }
+                  </p>
+                </div>
+              </article>
+            );
+          })
+        }
+      </div>
+
+      <p class="picks__advisory">
+        GF, DF and V are Inari's own dietary markers, not allergen guarantees.
+        <span data-verbatim>{ADVISORY}</span>
+      </p>
+    </div>
+  </section>
+
+  {/* ---- Kitchen / craft ------------------------------------------------ */}
+  <section class="craft">
+    <div class="wrap">
+      <div class="craft__top">
+        <div class="craft__intro">
+          <h2>Before it reaches the plate</h2>
+          <p class="craft__lede">
+            Most of Inari's photography is finished food. These four frames are
+            not: hands, a steel bench, crushed ice, and a pass lit by one paper
+            lantern. Two of them are the same small job — laying a single
+            bamboo leaf across a tray — which is the part a dish photograph
+            never shows.
+          </p>
+        </div>
+
+        <figure class="craft__lead">
+          <div class="frame craft__lead-frame">
+            <Image
+              src={pass.src}
+              alt={pass.alt}
+              loading="lazy"
+              {...frame(pass.src, 1000, "(min-width: 1024px) 52vw, 100vw")}
+            />
+          </div>
+        </figure>
+      </div>
+
+      <div class="craft__row">
+        <figure class="craft__figure">
+          <div class="frame craft__frame craft__frame--tall">
+            <Image
+              src={prepBench.src}
+              alt={prepBench.alt}
+              loading="lazy"
+              {...frame(prepBench.src, 700, "(min-width: 1024px) 30vw, 100vw")}
+            />
+          </div>
+        </figure>
+        <figure class="craft__figure">
+          <div class="frame craft__frame craft__frame--square">
+            <Image
+              src={ponzuTray.src}
+              alt={ponzuTray.alt}
+              loading="lazy"
+              {...frame(ponzuTray.src, 700, "(min-width: 1024px) 30vw, 100vw")}
+            />
+          </div>
+        </figure>
+        <figure class="craft__figure">
+          <div class="frame craft__frame craft__frame--tall">
+            <Image
+              src={sashimiTray.src}
+              alt={sashimiTray.alt}
+              loading="lazy"
+              {...frame(sashimiTray.src, 700, "(min-width: 1024px) 30vw, 100vw")}
+            />
+          </div>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  {/*
+    ---- Closing --------------------------------------------------------
+    The one block on this page where type sits over a photograph, and the
+    only one that therefore carries .scrim. The scrim's bottom stop is 88%
+    ink, so paper-coloured type over it measures well past AA even where the
+    frame's own bottom edge is pale timber.
+  */}
+  <section class="section closing">
+    <div class="wrap">
+      <figure class="closing__figure sheet">
+        <div class="frame closing__frame">
+          <Image
+            src={closingPhoto}
+            alt={altFor("drinks-matcha-tiramisu")}
+            loading="lazy"
+            {...frame(closingPhoto, 900, "(min-width: 768px) 38rem, 100vw")}
+          />
+          <div class="scrim"></div>
+          <div class="closing__panel">
+            <h2 class="closing__title">Dinner starts at five</h2>
+            <p class="closing__note">
+              Seven nights at Canberra Centre. Lunch is for groups of ten or
+              more, booked in advance.
+            </p>
+            <a class="btn btn--primary btn--lg" href={`${base}book/`}>Book a Table</a>
+          </div>
+        </div>
+      </figure>
+    </div>
+  </section>
 </Layout>
+
+<style>
+  /* ---- Hero ---------------------------------------------------------------
+   * A cover, not a banner: type block and plate side by side, in register.
+   * No text over the photograph here — see the note in the frontmatter.
+   */
+
+  .hero {
+    padding-block: clamp(var(--space-8), 5vw, var(--space-12));
+  }
+
+  .hero__grid {
+    display: grid;
+    gap: var(--space-8);
+  }
+
+  .hero__mark {
+    width: 3.5rem;
+    height: auto;
+
+    /* The mark is red line art on a white field; multiply drops the white
+       into the paper so it reads as printed rather than pasted on. */
+    mix-blend-mode: multiply;
+    margin-bottom: var(--space-5);
+  }
+
+  .hero__title {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .hero__word {
+    display: block;
+  }
+
+  /* The second line of the h1 is running text, not display: it carries the
+     location, so it is set in the functional face at a readable size and
+     given back its normal tracking. */
+  .hero__line {
+    display: block;
+    max-width: 26ch;
+    font-family: var(--font-functional);
+    font-size: clamp(1.0625rem, 1rem + 0.4vw, 1.25rem);
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: normal;
+    color: var(--color-ink-muted);
+  }
+
+  .hero__lede {
+    margin-top: var(--space-5);
+  }
+
+  .hero__where {
+    margin-top: var(--space-4);
+    font-size: 0.9375rem;
+    color: var(--color-ink-muted);
+  }
+
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-top: var(--space-6);
+  }
+
+  .hero__figure {
+    margin: 0;
+  }
+
+  .hero__frame {
+    aspect-ratio: 1 / 1;
+
+    /* The page's one authored motion moment: the plate coming into register,
+       the way a sheet settles under the press. It eases out from an already
+       visible state — no opacity, no reveal — so nothing on this page depends
+       on animation to become readable, and prefers-reduced-motion (handled
+       globally in global.css) collapses it to a still frame with no loss. */
+    animation: register var(--dur-slow) var(--ease-out) both;
+  }
+
+  @keyframes register {
+    from {
+      transform: translate3d(0, 0.875rem, 0) scale(1.012);
+    }
+  }
+
+  /* ---- Promotion strip ----------------------------------------------------
+   * Ships switched off (see the frontmatter). The styling exists so that
+   * flipping the switch is a one-line change rather than a design task —
+   * that is the whole point of separating the announcement from the layout.
+   */
+
+  .promo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-2) var(--space-4);
+    padding: var(--space-4) 0;
+    border-top: var(--hairline) solid var(--color-rule);
+    border-bottom: var(--hairline) solid var(--color-rule);
+  }
+
+  .promo__body {
+    font-weight: 600;
+  }
+
+  /* ---- Practical info ---------------------------------------------------- */
+
+  .service {
+    background: var(--color-red-deep);
+    color: var(--color-paper);
+    padding-block: clamp(var(--space-8), 5vw, var(--space-12));
+  }
+
+  .service__head {
+    max-width: 30ch;
+  }
+
+  .service__lede {
+    margin-top: var(--space-4);
+    font-size: clamp(1.0625rem, 1rem + 0.4vw, 1.25rem);
+    line-height: 1.5;
+    color: var(--color-on-red-muted);
+    max-width: 34ch;
+  }
+
+  .service__cols {
+    margin-top: var(--space-8);
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .service__col + .service__col {
+    border-top: var(--hairline) solid rgb(251 249 246 / 28%);
+    padding-top: var(--space-5);
+  }
+
+  .service__col h3 {
+    margin-bottom: var(--space-4);
+  }
+
+  .service__hours {
+    margin: 0;
+    max-width: 18rem;
+  }
+
+  .service__row {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding-block: var(--space-1);
+    border-bottom: var(--hairline) dotted rgb(251 249 246 / 32%);
+  }
+
+  .service__row dt {
+    color: var(--color-on-red-muted);
+  }
+
+  /* Hours are measurement, which is the only thing the mono face is allowed
+     to set (tokens.css). Tabular figures so the times line up as a column. */
+  .service__time {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  .service__note {
+    max-width: 34ch;
+  }
+
+  .service__note + .service__note {
+    margin-top: var(--space-3);
+  }
+
+  .service__addr {
+    font-style: normal;
+    line-height: 1.7;
+    margin-bottom: var(--space-3);
+  }
+
+  .service a {
+    color: var(--color-paper);
+    text-decoration-color: rgb(251 249 246 / 55%);
+  }
+
+  .service a:hover {
+    color: var(--color-on-red-muted);
+  }
+
+  /* ---- Brand statement --------------------------------------------------- */
+
+  .statement__anchor {
+    position: relative;
+    border-top: var(--hairline) solid var(--color-rule);
+  }
+
+  /* Centred on the rule, so the crosshair crosses it — a registration target
+     reads as in-register only when the line runs through it. */
+  .statement__anchor :global(.reg-mark) {
+    position: absolute;
+    top: -0.5625rem;
+    left: 0;
+  }
+
+  .statement__grid {
+    margin-top: var(--space-10);
+    display: grid;
+    gap: var(--space-8);
+  }
+
+  .statement__lede {
+    margin-top: var(--space-5);
+  }
+
+  .statement__p {
+    margin-top: var(--space-5);
+    color: var(--color-ink-muted);
+  }
+
+  .statement__figure {
+    margin: 0;
+  }
+
+  .statement__frame {
+    aspect-ratio: 4 / 5;
+  }
+
+  .figure-note {
+    margin-top: var(--space-3);
+    font-size: 0.8125rem;
+    color: var(--color-ink-muted);
+  }
+
+  /* ---- Selected dishes --------------------------------------------------- */
+
+  .picks__head {
+    max-width: 44ch;
+  }
+
+  .picks__p {
+    margin-top: var(--space-4);
+    color: var(--color-ink-muted);
+  }
+
+  .picks__grid {
+    margin-top: var(--space-10);
+    display: grid;
+    gap: var(--space-10);
+  }
+
+  .pick {
+    position: relative;
+  }
+
+  .pick__frame {
+    aspect-ratio: 4 / 5;
+  }
+
+  .pick__body {
+    margin-top: var(--space-4);
+  }
+
+  .pick__name {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+  }
+
+  .pick__name a {
+    color: var(--color-ink);
+    text-decoration: none;
+  }
+
+  /* The whole block is the hit area, but only the name is the link — one
+     accessible link per dish instead of two pointing at the same page. */
+  .pick__name a::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+
+  .pick:hover .pick__name a,
+  .pick:focus-within .pick__name a {
+    color: var(--color-red);
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.18em;
+  }
+
+  .pick__desc {
+    margin-top: var(--space-2);
+    max-width: 40ch;
+    color: var(--color-ink-muted);
+  }
+
+  .pick__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+  }
+
+  .pick__price {
+    font-size: 1.0625rem;
+    margin-right: var(--space-2);
+  }
+
+  .picks__advisory {
+    margin-top: var(--space-10);
+    padding-top: var(--space-4);
+    border-top: var(--hairline) solid var(--color-rule);
+    max-width: 62ch;
+    font-size: 0.875rem;
+    color: var(--color-ink-muted);
+  }
+
+  /* ---- Kitchen / craft ---------------------------------------------------
+   * Reversed onto the ink, which is where this photography actually lives:
+   * every one of these four frames is shot in a dark room. No captions —
+   * these are people and process, not dishes (TASKS.md §1.4).
+   */
+
+  .craft {
+    background: var(--color-ink);
+    color: var(--color-paper);
+    padding-block: clamp(var(--space-10), 7vw, var(--space-12));
+  }
+
+  .craft__top {
+    display: grid;
+    gap: var(--space-8);
+  }
+
+  .craft__lede {
+    margin-top: var(--space-5);
+    font-size: clamp(1.0625rem, 1rem + 0.4vw, 1.25rem);
+    line-height: 1.55;
+    color: var(--color-paper);
+  }
+
+  .craft__lead,
+  .craft__figure {
+    margin: 0;
+  }
+
+  .craft__lead-frame {
+    aspect-ratio: 4 / 5;
+    background: rgb(251 249 246 / 8%);
+  }
+
+  .craft__row {
+    margin-top: var(--space-10);
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .craft__frame {
+    background: rgb(251 249 246 / 8%);
+  }
+
+  .craft__frame--tall {
+    aspect-ratio: 4 / 5;
+  }
+
+  .craft__frame--square {
+    aspect-ratio: 1 / 1;
+  }
+
+  /* ---- Closing ----------------------------------------------------------- */
+
+  .closing {
+    padding-bottom: 0;
+  }
+
+  .closing__figure {
+    margin: 0 auto;
+    max-width: 38rem;
+  }
+
+  .closing__frame {
+    aspect-ratio: 3 / 4;
+  }
+
+  .closing__panel {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    display: grid;
+    justify-items: start;
+    gap: var(--space-4);
+    padding: var(--space-10) var(--space-6) var(--space-6);
+  }
+
+  .closing__title {
+    color: var(--color-paper);
+  }
+
+  .closing__note {
+    max-width: 34ch;
+    color: var(--color-rule-strong);
+  }
+
+  /* ---- Wider than a phone ------------------------------------------------- */
+
+  @media (width >= 48rem) {
+    .service__cols {
+      grid-template-columns: 0.9fr 1fr 1.2fr;
+      gap: var(--space-8);
+    }
+
+    .service__col + .service__col {
+      border-top: 0;
+      border-left: var(--hairline) solid rgb(251 249 246 / 28%);
+      padding-top: 0;
+      padding-left: var(--space-8);
+    }
+
+    .craft__row {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    /* Baselines that refuse to sit still — the same restlessness the menu's
+       own section headings have, arrived at through layout rather than a
+       decorative typeface. */
+    .craft__figure:nth-child(2) {
+      margin-top: var(--space-10);
+    }
+
+    .craft__figure:nth-child(3) {
+      margin-top: var(--space-5);
+    }
+  }
+
+  @media (width >= 64rem) {
+    .hero__grid {
+      grid-template-columns: repeat(12, 1fr);
+      align-items: center;
+      gap: var(--space-10);
+    }
+
+    .hero__type {
+      grid-column: 1 / span 5;
+    }
+
+    /* Column 6 is left empty on purpose: a specified margin down the middle
+       of the sheet, not leftover room (decision-context §6). */
+    .hero__figure {
+      grid-column: 7 / span 6;
+    }
+
+    .hero__frame {
+      aspect-ratio: 5 / 4;
+    }
+
+    .statement__grid {
+      grid-template-columns: repeat(12, 1fr);
+      align-items: end;
+      gap: var(--space-12);
+    }
+
+    .statement__body {
+      grid-column: 1 / span 5;
+    }
+
+    .statement__figure {
+      grid-column: 7 / span 6;
+    }
+
+    .picks__grid {
+      grid-template-columns: repeat(12, 1fr);
+      gap: var(--space-10) var(--space-8);
+    }
+
+    /* Asymmetric on purpose, and interlocking rather than stepped: the tall
+       frame leads, the square one bridges both rows, the third re-enters
+       under the first. Three sizes, three ratios, one axis. */
+    .pick:nth-child(1) {
+      grid-column: 1 / span 6;
+      grid-row: 1;
+    }
+
+    .pick:nth-child(2) {
+      grid-column: 8 / span 5;
+      grid-row: 1 / span 2;
+      align-self: center;
+    }
+
+    .pick:nth-child(2) .pick__frame {
+      aspect-ratio: 1 / 1;
+    }
+
+    .pick:nth-child(3) {
+      grid-column: 3 / span 5;
+      grid-row: 2;
+    }
+
+    .craft__top {
+      grid-template-columns: repeat(12, 1fr);
+      align-items: end;
+      gap: var(--space-10);
+    }
+
+    .craft__intro {
+      grid-column: 1 / span 4;
+    }
+
+    .craft__lead {
+      grid-column: 6 / span 7;
+    }
+
+    .craft__lead-frame {
+      aspect-ratio: 5 / 4;
+    }
+
+    .closing__frame {
+      aspect-ratio: 4 / 5;
+    }
+  }
+</style>

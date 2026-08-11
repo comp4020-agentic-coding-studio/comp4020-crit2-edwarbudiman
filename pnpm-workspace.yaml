@@ -1,6 +1,10 @@
 # esbuild (used by Astro/Vite) needs its postinstall to set up its native binary.
-# sharp is Astro's optional image-processing dep (astro:assets); this minimal
-# site has no <Image> usage, so its native build is left disabled.
+# sharp is Astro's image-processing dep behind astro:assets. It was disabled
+# while this repo was a two-page placeholder with no <Image> usage. The crit-2
+# build uses <Image> for all 32 photographs — several are over 500KB and the
+# largest is 820KB — so Sharp now does real work: it emits the resized srcset
+# that keeps the menu readable at 390px without shipping desktop-weight files
+# to a phone. Its native build has to be allowed or `pnpm build` cannot run.
 allowBuilds:
   esbuild: true
-  sharp: false
+  sharp: true

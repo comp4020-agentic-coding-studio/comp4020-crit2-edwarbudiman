@@ -1,0 +1,51 @@
+---
+/*
+ * Inari's own signature mark.
+ *
+ * The June 2026 menu prints a small red five-pointed star beside six dishes.
+ * Three of them are in this book: Inari Sashimi 18pcs, Salmon & Scallop, and
+ * Naked Crispy Salmon. This is reproduced data, not our editorial opinion of
+ * which dishes are best — which is why it is drawn from src/data/menu.ts's
+ * `signature` field and never applied by hand.
+ *
+ * Drawn as SVG rather than typed as "★": the craft floor bans unicode glyphs
+ * standing in for an icon system, and a text star inherits whatever star the
+ * user's font happens to have.
+ */
+interface Props {
+  size?: number;
+  /* Every star needs to say what it means; only pass false where an adjacent
+     visible label already does. */
+  labelled?: boolean;
+}
+const { size = 15, labelled = true } = Astro.props;
+---
+
+<span class="star-wrap">
+  <svg
+    class="star"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <path
+      fill="currentColor"
+      d="M12 1.6l3.09 6.83 7.41.77-5.55 5.03 1.58 7.32L12 17.86l-6.53 3.69 1.58-7.32L1.5 9.2l7.41-.77z"
+    ></path>
+  </svg>
+  {labelled && <span class="visually-hidden">Signature dish, starred on Inari's menu</span>}
+</span>
+
+<style>
+  .star-wrap {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .star {
+    color: var(--color-red);
+    flex: none;
+  }
+</style>

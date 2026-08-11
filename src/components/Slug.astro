@@ -1,0 +1,48 @@
+---
+/*
+ * The slug line.
+ *
+ * A printer's slug is the strip of metadata along the top of a proof: which
+ * file, which revision, when it was output. Inari's menu carries one —
+ * "inari menu 25 Jun.pdf 1 25/6/2026 14:09" — and it is the single most
+ * useful thing on that document, because it is the only part that says where
+ * the document came from and how current it is.
+ *
+ * So the slug is where this site puts provenance too. Site-wide it carries
+ * the disclosure that has to be somewhere and is usually buried: that this
+ * is an unofficial student redesign. On the menu page it carries the source
+ * document and its revision date. Same mark, same job, at the top of the
+ * sheet where a reader can find it before reading anything else.
+ */
+interface Props {
+  /** Right-hand cell. Left cell is the slot. */
+  meta?: string;
+  class?: string;
+}
+const { meta, class: className } = Astro.props;
+---
+
+<div class:list={["slug", className]}>
+  <p class="furniture slug__text"><slot /></p>
+  {meta && <p class="furniture slug__meta">{meta}</p>}
+</div>
+
+<style>
+  .slug {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-5);
+  }
+
+  .slug__text,
+  .slug__meta {
+    margin: 0;
+    max-width: none;
+  }
+
+  .slug__meta {
+    color: var(--color-rule-strong);
+  }
+</style>

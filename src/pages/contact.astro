@@ -1,11 +1,993 @@
 ---
+/*
+ * Contact, and why this redesign.
+ *
+ * TASKS.md §6. This is the page where the argument is made on the page
+ * rather than in the room: the practical facts the original buries, the
+ * audit of the original stated as evidenced fact, the specific thing this
+ * site does instead of each fault, what it gives up, and where every asset
+ * and value came from.
+ *
+ * Two harness rules shape almost every line here:
+ *
+ *   1. Never invent a fact about Inari. Every fact below is from
+ *      inari.restaurant or the June 2026 menu PDF (TASKS.md Appendix A).
+ *      Counts come from src/data/menu.ts so prose cannot drift from data.
+ *   2. Do not paste the original's copy. Where the original has to be
+ *      quoted to be critiqued, the quote is short and the element carries
+ *      data-verbatim so spec/crit-2.test.ts's paste test exempts it.
+ *
+ * There is no phone number here, and the page says why: Inari publishes
+ * none. The finding about the original asking a reader to call is written
+ * without illustrating it with a number, real or fake.
+ */
 import Layout from "../layouts/Layout.astro";
+import ColourBar from "../components/ColourBar.astro";
+import RegMark from "../components/RegMark.astro";
+import { Image } from "astro:assets";
+import chefAlone from "../assets/photos/chef-alone.webp";
+import { ADVISORY, SOURCE, book, dishList, kitchenPhotos } from "../data/menu.ts";
+
+const base = import.meta.env.BASE_URL;
+
+/* Counts are derived, never typed twice. If the book changes, the sentences
+   on this page change with it. */
+const pageCount = book.length;
+const dishCount = dishList.length;
+const remainingDishes = SOURCE.totalDishesApprox - dishCount;
+
+/* Build-time guard rather than a silent `?? ""`: an image without alt text
+   fails spec/invariants.test.ts, and a missing photo should fail loudly here
+   instead of shipping a nameless picture. */
+const chefPhoto = kitchenPhotos.find((photo) => photo.file === "chef-alone");
+if (!chefPhoto) {
+  throw new Error("contact.astro: chef-alone is missing from kitchenPhotos in src/data/menu.ts");
+}
+
+/* When the original was read for the findings below. A critique of a live
+   site is only true as at a date, so the date is on the page. */
+const AUDITED = "12 August 2026";
+
+const hours = [
+  { days: "Mon–Thu", time: "5–9pm" },
+  { days: "Fri", time: "5–9.30pm" },
+  { days: "Sat", time: "5–9.30pm" },
+  { days: "Sun", time: "5–9pm" },
+];
 ---
 
-<Layout title="Contact — Inari">
-  <h1>Contact</h1>
-  <p>
-    Contact details and the "what's better here" rationale (Section 6 of
-    <code>TASKS.md</code>) land here.
-  </p>
+<Layout
+  title="Contact, and why this redesign — Inari"
+  description="How to reach Inari, what an audit of inari.restaurant found, and what this unofficial student redesign does differently."
+  slugMeta={`Audit of inari.restaurant · ${AUDITED}`}
+>
+  <section class="section--tight">
+    <div class="wrap masthead">
+      <h1>Contact, and why this redesign</h1>
+      <p class="lede masthead__lede">
+        Inari's kitchen already keeps every dish's description, price,
+        provenance and dietary marker, current enough to be reprinted in June.
+        Their website flattens all of it into press-ready print artwork behind
+        a link labelled <q data-verbatim>food</q>. This redesign gives that
+        information a body you can read on a phone — and this page is where it
+        argues for itself.
+      </p>
+    </div>
+  </section>
+
+  <section class="section--tight" aria-labelledby="contact-h">
+    <div class="wrap">
+      <hr class="rule" />
+      <h2 class="section-h" id="contact-h">Contact</h2>
+
+      <div class="sheet facts">
+        <div class="facts__col">
+          <h3>Where</h3>
+          <address>
+            Canberra Centre, 148 Bunda St<br />
+            Ground Level, between Bunda Street and Scotts Crossing<br />
+            Canberra City ACT 2601
+          </address>
+          <p class="facts__email">
+            <a href="mailto:hello@inari.restaurant">hello@inari.restaurant</a>
+          </p>
+          <p class="facts__note">
+            Email is the only way to reach Inari in writing. Inari publishes no
+            phone number, so this site prints none — not even an example.
+          </p>
+        </div>
+
+        <div class="facts__col">
+          <h3>When</h3>
+          <p class="facts__headline">Dinner only. No lunch service, any day.</p>
+          <dl class="hours">
+            {
+              hours.map((row) => (
+                <div class="hours__row">
+                  <dt>{row.days}</dt>
+                  <dd class="price">{row.time}</dd>
+                </div>
+              ))
+            }
+          </dl>
+          <p class="facts__note">
+            Lunch is pre-booked groups of ten or more only; there is no walk-in
+            lunch service.
+          </p>
+        </div>
+
+        <div class="facts__col">
+          <h3>Elsewhere</h3>
+          <ul class="link-list">
+            <li><a href="https://inari.restaurant/">inari.restaurant</a></li>
+            <li>
+              <a href="https://www.instagram.com/inari.restaurant/">Instagram</a>
+            </li>
+            <li><a href="https://www.facebook.com/inari.cbr/">Facebook</a></li>
+            <li>
+              <a href={SOURCE.url}>Full food menu (PDF)</a>
+            </li>
+          </ul>
+          <p class="facts__note">
+            The first link is Inari's real website. Everything you are reading
+            is not.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="why-h">
+    <div class="wrap">
+      <hr class="rule" />
+      <h2 class="section-h" id="why-h">Why I like them</h2>
+
+      <div class="why">
+        <figure class="why__figure">
+          <div class="frame">
+            <Image
+              src={chefAlone}
+              alt={chefPhoto.alt}
+              width={800}
+              height={1000}
+              loading="lazy"
+            />
+          </div>
+          <figcaption class="caption">
+            Photography by Inari, used with permission and not monetised. One of
+            four kitchen photographs in this project; none of them are styled
+            press shots.
+          </figcaption>
+        </figure>
+
+        <!--
+          Edwar: this section is written to be replaced. Swap these three
+          paragraphs for your own sentences — they are yours to write and you
+          are the only person here with first-hand knowledge. The only rule is
+          the harness rule: nothing may state a fact about Inari that isn't
+          checkable against inari.restaurant or the June 2026 menu PDF. No
+          named staff, no anecdote a marker cannot verify.
+        -->
+        <div class="why__text measure">
+          <p>
+            I work at Inari part-time. That is the reason this redesign exists,
+            and also the reason I am careful about what it claims: most of what
+            I know about the place I learned standing in it, which is exactly
+            the kind of knowledge that does not belong on a public page unless
+            someone else can check it.
+          </p>
+          <p>
+            What I would want a stranger to understand is how much of the food
+            is decided by hand, every service. The kitchen photographs in this
+            project are not marketing set-ups. One is a pair of hands laying a
+            bamboo leaf across a tray of oysters on ice. Another is one chef
+            plating alone at the pass. That is what the work looks like from
+            the inside, and it is why the photography carries the site instead
+            of decorating it.
+          </p>
+          <p>
+            The other thing worth understanding is how much the kitchen already
+            knows. Every dish has a written description, a price, a dietary
+            marker and, where the menu gives one, a provenance — maintained
+            carefully enough to be reprinted in June 2026. That information is
+            the best thing Inari has to put on a website,
+            and until now none of it has reached one. This site is mostly an
+            argument that it should.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="audit-h">
+    <div class="wrap">
+      {/*
+        The registration mark earns its place here specifically: this section
+        is two columns that have to line up — every finding against the thing
+        this site does instead of it. That alignment is the whole argument, and
+        a register mark is the print equivalent of exactly that claim.
+      */}
+      <div class="section-head">
+        <RegMark size={22} />
+        <hr class="rule section-head__rule" />
+      </div>
+
+      <h2 class="section-h" id="audit-h">
+        What the current site gets wrong, and what this one does instead
+      </h2>
+
+      <div class="audit-intro">
+        <p class="lede measure">
+          Read as at {AUDITED}. The strongest three: the menu here is {pageCount}
+          readable pages of Inari's own structured data instead of a link to a
+          print file; booking is a button in the header at 390px and at 1920px
+          instead of a tap inside a hamburger; and the hours say
+          <strong>no lunch service, any day</strong> in words at the top of the
+          page instead of leaving you to infer it from a gap.
+        </p>
+        <p class="measure fair">
+          To be fair to what is being critiqued: inari.restaurant is competent,
+          working Squarespace-era work, and its photography is genuinely good —
+          good enough that this redesign leans on it entirely and could not
+          exist without it. Every finding below is about structure and
+          staleness, not craft. A critique that overreaches is worth less at a
+          crit than one that lands, so nothing here is stretched to make a
+          longer list.
+        </p>
+      </div>
+
+      <dl class="register">
+        <div class="register__row">
+          <dt>
+            <p class="register__label furniture">inari.restaurant</p>
+            <p class="register__lead">
+              The menu page contains no menu. It has a hero photograph, one
+              sentence, and two links — one labelled <q data-verbatim>food</q>,
+              one labelled <q data-verbatim>drink</q>. Both leave the site for a
+              PDF.
+            </p>
+          </dt>
+          <dd>
+            <p class="register__label furniture furniture--red">this redesign</p>
+            <p>
+              The menu <em>is</em> the page:
+              <a href={`${base}menu/`}>{pageCount} pages, {dishCount} dishes</a>,
+              each carrying Inari's own description, price and dietary markers
+              as selectable text. It says outright that it is a selection, and
+              Inari's full PDF stays linked for the roughly {remainingDishes}
+              further dishes, the two set menus and the whole drinks list.
+            </p>
+          </dd>
+        </div>
+
+        <div class="register__row">
+          <dt>
+            <p class="register__label furniture">inari.restaurant</p>
+            <p class="register__lead">
+              The food menu is not a document made for screens. It is
+              press-ready artwork: two A3 landscape spreads carrying crop marks,
+              registration targets, a CMYK colour bar, a greyscale step wedge
+              and the printer's slug — served to a phone as the menu.
+            </p>
+            <p class="register__evidence furniture" data-verbatim>
+              {SOURCE.label} · 1 · {SOURCE.slug}
+            </p>
+          </dt>
+          <dd>
+            <p class="register__label furniture furniture--red">this redesign</p>
+            <p>
+              Every price, description and marker is real text, laid out for a
+              390px column. Nothing asks a reader to pinch-zoom an A3 spread.
+              The print furniture that file carries is not hidden either — it is
+              quoted on purpose, because the slug line, the colour bar and the
+              registration marks are where both the data and the palette came
+              from. Quoting a press sheet is honest; pretending a press sheet is
+              a web page is the fault.
+            </p>
+          </dd>
+        </div>
+
+        <div class="register__row">
+          <dt>
+            <p class="register__label furniture">inari.restaurant</p>
+            <p class="register__lead">
+              A superseded drinks menu is still sitting in the page markup — a
+              September 2024 file alongside the August 2025 one. Nothing on the
+              page tells a reader which is current.
+            </p>
+            <p class="register__evidence furniture" data-verbatim>
+              Inari_A5DrinksMenu_270924.pdf
+            </p>
+          </dt>
+          <dd>
+            <p class="register__label furniture furniture--red">this redesign</p>
+            <p>
+              One menu document is linked, named, and dated where a reader can
+              see it: the slug strip at the top of the menu page carries the
+              filename and its revision timestamp. A stale file cannot hide in
+              the markup here, because provenance is printed rather than
+              implied.
+            </p>
+          </dd>
+        </div>
+
+        <div class="register__row">
+          <dt>
+            <p class="register__label furniture">inari.restaurant</p>
+            <p class="register__lead">
+              An expired promotion is still live, and the page contradicts
+              itself about it. One copy offers <q data-verbatim>20% off</q> and
+              closes the sentence with <q data-verbatim>during July</q>. A
+              second copy of the same offer drops those two words, so it reads
+              as an open-ended discount with no end date at all.
+            </p>
+          </dt>
+          <dd>
+            <p class="register__label furniture furniture--red">this redesign</p>
+            <p>
+              There is no promotion anywhere on this site, and no time-limited
+              claim in any of its copy — so there is nothing here that can
+              expire quietly or be worded two different ways in two places. The
+              only dated thing on the page is a date stated as a date: the
+              menu's revision, and the day this audit was read.
+            </p>
+          </dd>
+        </div>
+
+        <div class="register__row">
+          <dt>
+            <p class="register__label furniture">inari.restaurant</p>
+            <p class="register__lead">
+              The lunch-booking section tells the reader to
+              <q data-verbatim>please call or email our team</q>. No phone
+              number appears anywhere on the site, so half of that instruction
+              cannot be followed.
+            </p>
+          </dt>
+          <dd>
+            <p class="register__label furniture furniture--red">this redesign</p>
+            <p>
+              This site prints no number either, because Inari publishes none —
+              but it says so, in the place a reader looks for one, and gives the
+              single channel that does work as a live
+              <a href="mailto:hello@inari.restaurant">mailto link</a>. A missing
+              option is a fact; an instruction that cannot be followed is a bug.
+            </p>
+          </dd>
+        </div>
+
+        <div class="register__row">
+          <dt>
+            <p class="register__label furniture">inari.restaurant</p>
+            <p class="register__lead">
+              Under the booking heading, the reservation widget renders as an
+              empty dark rectangle. The action the site most wants a visitor to
+              take is a blank box.
+            </p>
+          </dt>
+          <dd>
+            <p class="register__label furniture furniture--red">this redesign</p>
+            <p>
+              The <a href={`${base}book/`}>booking page</a> is a student
+              prototype and says so at the top in plain words — it takes no
+              reservation and sends nothing anywhere. What it is not is blank,
+              and it does not depend on a third-party script loading. It also
+              cannot offer a time Inari does not serve: there is no lunch
+              service, so no lunch slot exists to pick.
+            </p>
+          </dd>
+        </div>
+
+        <div class="register__row">
+          <dt>
+            <p class="register__label furniture">inari.restaurant</p>
+            <p class="register__lead">
+              White type is set straight onto busy food photography with nothing
+              behind it. At 390×844 the crop tightens and the type lands on the
+              brightest part of the plate.
+            </p>
+          </dt>
+          <dd>
+            <p class="register__label furniture furniture--red">this redesign</p>
+            <p>
+              No text sits on a photograph here without a scrim beneath it, and
+              the scrim is one token applied everywhere rather than a decision
+              re-made per image. Text contrast was measured rather than eyeballed
+              and the ratios are recorded in the stylesheet — including the
+              combination that failed and therefore never ships: black on Inari
+              red is 3.46:1, under the 4.5:1 body minimum.
+            </p>
+          </dd>
+        </div>
+
+        <div class="register__row">
+          <dt>
+            <p class="register__label furniture">inari.restaurant</p>
+            <p class="register__lead">
+              Opening hours and the address live in the footer and nowhere else,
+              and the hours never use the word closed. That lunch is closed
+              every day is something you have to infer from what the list leaves
+              out.
+            </p>
+          </dt>
+          <dd>
+            <p class="register__label furniture furniture--red">this redesign</p>
+            <p>
+              The hours say it in words — <strong>no lunch service, any day</strong>
+              — near the top of this page, and again in the footer of every page
+              beside the address. The exception is stated rather than hinted at:
+              lunch is pre-booked groups of ten or more only.
+            </p>
+          </dd>
+        </div>
+
+        <div class="register__row">
+          <dt>
+            <p class="register__label furniture">inari.restaurant</p>
+            <p class="register__lead">
+              At 390px the <q data-verbatim>BOOK NOW</q> button folds into the
+              hamburger menu. The primary conversion action is one tap further
+              away exactly where taps cost the most.
+            </p>
+          </dt>
+          <dd>
+            <p class="register__label furniture furniture--red">this redesign</p>
+            <p>
+              There is no hamburger on this site at any width. Book a Table is a
+              solid red button in the header at 390px and at 1920px, in the same
+              flat row as every other link — visible at the top of this page
+              right now, whichever device you are reading it on.
+            </p>
+          </dd>
+        </div>
+
+        <div class="register__row">
+          <dt>
+            <p class="register__label furniture">inari.restaurant</p>
+            <p class="register__lead">
+              The kitchen maintains dietary information per dish — the printed
+              menu marks GF, DF and V, and keeps a separate celiac-friendly list
+              — and then the whole of it is flattened into print artwork. A
+              diner who needs that information has to open a PDF to get it.
+            </p>
+          </dt>
+          <dd>
+            <p class="register__label furniture furniture--red">this redesign</p>
+            <p>
+              Every marker Inari prints sits beside its dish as text, exactly as
+              printed, with the key spelled out: GF gluten free, DF dairy free,
+              V vegetarian. These are Inari's dietary markers, not allergen
+              guarantees, and Inari's own advisory travels with them:
+              <q data-verbatim>{ADVISORY}</q> Nothing was inferred, extended or
+              generated. Where Inari's own two pages disagree, both readings
+              ship rather than one being quietly chosen — the priced menu says
+              <q data-verbatim>Corn Cobs</q>, the celiac list says
+              <q data-verbatim>Corn Ribs</q>, and the menu page says so.
+            </p>
+          </dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="section--tight" aria-labelledby="gives-up-h">
+    <div class="wrap">
+      <hr class="rule" />
+      <h2 class="section-h" id="gives-up-h">What this redesign gives up</h2>
+      <ul class="tradeoffs measure">
+        <li>
+          <strong>Completeness.</strong> Inari's PDF is the whole menu. This one
+          is {dishCount} dishes of about {SOURCE.totalDishesApprox}, chosen by
+          which dishes there is a photograph of — so the photo library, not the
+          kitchen, decided what you can read here. The full menu stays one link
+          away for that reason.
+        </li>
+        <li>
+          <strong>The room.</strong> There are no interior photographs in the
+          library at all. The interior shapes the neutrals on this site — the
+          near-black is sampled from the darkest pixels of Inari's own food
+          photography rather than set to pure black — but the room itself is
+          never shown, because showing it would mean generating it.
+        </li>
+        <li>
+          <strong>A real booking.</strong> Their embed, when it loads, takes an
+          actual reservation. This site's form deliberately sends nothing
+          anywhere, and no amount of design polish makes a prototype a
+          reservation system.
+        </li>
+        <li>
+          <strong>Drinks.</strong> The drinks list is not reproduced here in any
+          form. The finding above is that a stale drinks PDF sits in their
+          markup; the fix is not to transcribe a document this project has not
+          verified.
+        </li>
+        <li>
+          <strong>Time.</strong> This is a student prototype built in days
+          against a site that serves a working restaurant. It has not been
+          tested with a single one of Inari's actual customers.
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="sources-h">
+    <div class="wrap">
+      <div class="section-head">
+        {/*
+          Second and last registration mark on the page: the colour bar below
+          is the point where this design has to line up with the artifact it
+          was sampled from, which is precisely the job a register mark does.
+        */}
+        <RegMark size={22} />
+        <hr class="rule section-head__rule" />
+      </div>
+
+      <h2 class="section-h" id="sources-h">Where this design came from</h2>
+
+      <div class="palette">
+        <div class="palette__bar">
+          <ColourBar captioned class="palette__strip" />
+        </div>
+        <div class="palette__note measure">
+          <p>
+            The strip above is not an illustration of the claim that this
+            palette was sampled from Inari's own material. It <em>is</em> the
+            sample. Every swatch is a pixel lifted out of page 1 of Inari's menu
+            PDF: the process colour bar a printer uses to check ink density, and
+            beneath it the greyscale wedge that checks neutral balance. They are
+            on this page for the same reason a proof carries them — so the
+            colour can be checked against its source rather than taken on
+            trust.
+          </p>
+          <p>
+            Inari red is <span class="price">#C41411</span>, and it came from
+            Inari's own booking configuration, where the restaurant states it as
+            a hex value — not from an eyedropper on a screenshot. Sampling the
+            PDF's red panels instead gives
+            <span class="price">#9D0320</span>, which is what happens when CMYK
+            artwork is rendered with no colour profile: a darker, pinker red
+            that is a conversion artifact rather than a brand colour. That
+            second red still ships, but only as the fill behind large flooded
+            panels, where it measures 8.51:1 against white — never as the mark.
+            The distinction is the reason the sourcing order is written down:
+            published brand values first, the artifact second, our own judgement
+            last.
+          </p>
+          <p>
+            The type was identified before it was replaced. Inari's site sets
+            its display face in Uchiyama — which is both licensed to their
+            platform rather than to us, and squarely the decorative brush
+            category the brief rejects by name. The display face here is
+            Bricolage Grotesque, a contemporary grotesque with deliberate
+            irregularity in its terminals, chosen against the logo's hand-cut
+            block capitals rather than against an idea of Japan. There is no
+            brush script on this site, no torii, no rising sun and no cherry
+            blossom.
+          </p>
+          <p>
+            Everything here that looks like print production is doing a print
+            production job. The slug strip at the top of every page says what
+            this document is and who made it. Crop marks say where a block of
+            facts ends. Registration marks sit where two things have to line up
+            — the two on this page mark the audit's two columns and this
+            palette. If a mark cannot answer what job it does, it is not on the
+            page.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section--tight" aria-labelledby="credits-h">
+    <div class="wrap">
+      <hr class="rule" />
+      <h2 class="section-h" id="credits-h">Credits, permission, and what this is not</h2>
+
+      <div class="credits">
+        <div class="credits__block">
+          <h3>Photography</h3>
+          <div class="credits__body measure">
+            <p>
+              Every photograph on this site is Inari's own. Photo credit: Inari.
+              They are used with the manager's permission, on the condition that
+              they are not monetised — this site carries no advertising, no
+              affiliate link and no payment of any kind. No image here is
+              AI-generated: no invented dish, no invented room, no invented
+              staff.
+            </p>
+          </div>
+        </div>
+
+        <div class="credits__block">
+          <h3>Menu data</h3>
+          <div class="credits__body measure">
+            <p>
+              Transcribed from Inari's food menu, June 2026 —
+              <a href={SOURCE.url}>{SOURCE.label}</a>, revision
+              <span class="price">{SOURCE.slug}</span>. {dishCount} dishes of
+              about {SOURCE.totalDishesApprox}. Names, descriptions, prices and
+              dietary markers are reproduced as printed and nothing was
+              inferred, extended or generated. Where this site and Inari's menu
+              disagree, Inari's menu is right.
+            </p>
+          </div>
+        </div>
+
+        <div class="credits__block">
+          <h3>What this is not</h3>
+          <div class="credits__body measure">
+            <p>
+              This is not Inari's website. It is an unofficial student redesign,
+              built for COMP4020 at the Australian National University, and it
+              is not affiliated with or endorsed by Inari. Nothing on it can
+              take a booking, and no price on it should be trusted over Inari's
+              own menu.
+            </p>
+            <p class="credits__actions">
+              <a class="btn" href={`${base}menu/`}>Read the menu here</a>
+              <a class="btn btn--primary" href="https://inari.restaurant/">
+                Inari's real website
+              </a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 </Layout>
+
+<style>
+  /*
+   * Page-local styling only. The shared vocabulary (.wrap, .sheet, .rule,
+   * .furniture, .measure, .btn, .frame, .price) lives in global.css and is
+   * not touched from here.
+   *
+   * Motion budget: this page spends it nowhere. It is an argument made of
+   * text, and an entrance animation on a paragraph of evidence would be
+   * decoration that cannot say what job it does. The only movement is a
+   * ~140ms state change on the audit rows, which exists to tie a finding to
+   * its answer under the cursor, and the globally-handled reduced-motion
+   * preference collapses even that.
+   */
+
+  /* ---- Masthead ---- */
+
+  .masthead h1 {
+    /* Below the site's display-1 ceiling on purpose: this heading is a
+       sentence, not a poster, and at 6rem it breaks into four lines. */
+    font-size: clamp(2.5rem, 1.75rem + 3.4vw, 4.5rem);
+    max-width: 24ch;
+  }
+
+  .masthead__lede {
+    margin-top: var(--space-6);
+  }
+
+  /* ---- Section heads ---- */
+
+  .section-h {
+    margin-top: var(--space-6);
+    max-width: 40ch;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+  }
+
+  .section-head__rule {
+    flex: 1;
+  }
+
+  /* ---- Contact facts ---- */
+
+  .facts {
+    display: grid;
+    /* Deliberately unequal: three equal columns would read as a card row,
+       and the address needs more room than the hours do. */
+    grid-template-columns: 1.45fr 1fr 0.85fr;
+    gap: var(--space-8) var(--space-10);
+    margin-top: var(--space-8);
+  }
+
+  .facts__col h3 {
+    margin-bottom: var(--space-4);
+  }
+
+  address {
+    font-style: normal;
+    line-height: 1.7;
+  }
+
+  .facts__email {
+    margin-top: var(--space-3);
+    font-size: 1.0625rem;
+    font-weight: 600;
+  }
+
+  .facts__note {
+    margin-top: var(--space-4);
+    font-size: 0.875rem;
+    color: var(--color-ink-muted);
+    max-width: 32ch;
+  }
+
+  .facts__headline {
+    font-weight: 600;
+    max-width: 22ch;
+  }
+
+  .hours {
+    margin: var(--space-4) 0 0;
+    display: grid;
+    gap: var(--space-1);
+    max-width: 15rem;
+  }
+
+  .hours__row {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding-block: var(--space-1);
+    border-bottom: var(--hairline) dotted var(--color-rule);
+  }
+
+  .hours dt {
+    color: var(--color-ink-muted);
+  }
+
+  .hours dd {
+    margin: 0;
+  }
+
+  .link-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  /* ---- Why I like them ---- */
+
+  .why {
+    display: grid;
+    grid-template-columns: 0.8fr 1.2fr;
+    gap: var(--space-10);
+    align-items: start;
+    margin-top: var(--space-8);
+  }
+
+  .why__figure {
+    margin: 0;
+  }
+
+  .why__figure .frame {
+    aspect-ratio: 4 / 5;
+  }
+
+  .caption {
+    margin-top: var(--space-3);
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    color: var(--color-ink-muted);
+    max-width: 34ch;
+  }
+
+  .why__text {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  /* ---- The audit register ----
+   * Two aligned columns, hairline-separated, no boxes. A card grid would make
+   * ten findings look like ten equal features; a register makes each finding
+   * point at exactly one answer, which is the shape of the argument.
+   */
+
+  .audit-intro {
+    display: grid;
+    gap: var(--space-5);
+    margin-top: var(--space-6);
+  }
+
+  .fair {
+    color: var(--color-ink-muted);
+  }
+
+  .register {
+    margin: var(--space-10) 0 0;
+    border-bottom: var(--hairline) solid var(--color-rule);
+  }
+
+  .register__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4) var(--space-8);
+    padding-block: var(--space-6);
+    border-top: var(--hairline) solid var(--color-rule);
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+
+  .register__row:hover,
+  .register__row:focus-within {
+    background: var(--color-paper-2);
+  }
+
+  .register dt,
+  .register dd {
+    margin: 0;
+    display: grid;
+    gap: var(--space-3);
+    align-content: start;
+  }
+
+  /* The response is set off by a single hairline, which picks up the brand red
+     when the row is active. Elevation is declared once: a rule, not a box. */
+  .register dd {
+    padding-left: var(--space-5);
+    border-left: 1px solid var(--color-rule);
+    transition: border-color var(--dur-fast) var(--ease-out);
+  }
+
+  .register__row:hover dd,
+  .register__row:focus-within dd {
+    border-left-color: var(--color-red);
+  }
+
+  .register__label {
+    margin: 0;
+  }
+
+  .register__lead {
+    font-size: 1.0625rem;
+    line-height: 1.55;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+
+  /* Mono is legitimate here and only here: filenames, a page number and a
+     revision timestamp are machine output, not prose. */
+  .register__evidence {
+    margin: 0;
+    text-transform: none;
+    letter-spacing: 0.01em;
+    color: var(--color-ink-muted);
+    overflow-wrap: anywhere;
+  }
+
+  /* ---- Trade-offs ---- */
+
+  .tradeoffs {
+    margin: var(--space-8) 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .tradeoffs li {
+    padding-top: var(--space-4);
+    border-top: var(--hairline) solid var(--color-rule);
+  }
+
+  /* ---- Palette ---- */
+
+  /* The exhibit sits beside the argument about it rather than above it: at
+     desktop width a stacked bar leaves half the sheet empty and puts the
+     evidence out of view by the time you read the claim. */
+  .palette {
+    display: grid;
+    grid-template-columns: 0.85fr 1.15fr;
+    gap: var(--space-8) var(--space-10);
+    align-items: start;
+    margin-top: var(--space-8);
+  }
+
+  .palette__bar {
+    padding: var(--space-6);
+    background: var(--color-paper-2);
+    border-radius: var(--radius);
+  }
+
+  /*
+   * The component owns which colours the bar shows and where they came from.
+   * This page only sets the scale, because on the one page whose job is to
+   * evidence the redesign the bar has to be big enough to read swatch by
+   * swatch — at footer size it is a signature, here it is the exhibit.
+   */
+  .palette__bar :global(.strip) {
+    flex-wrap: wrap;
+  }
+
+  .palette__bar :global(.chip) {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .palette__bar :global(.strip--wedge .chip) {
+    width: 1.5rem;
+  }
+
+  .palette__note {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  /* ---- Credits ---- */
+
+  .credits {
+    display: grid;
+    gap: var(--space-8);
+    margin-top: var(--space-8);
+  }
+
+  /* Labelled rows, the same shape as the audit register above — the heading
+     is the term, the paragraph is the entry. Three stacked text blocks would
+     be a card grid without the boxes. */
+  .credits__block {
+    display: grid;
+    grid-template-columns: 13rem 1fr;
+    gap: var(--space-3) var(--space-8);
+    padding-top: var(--space-5);
+    border-top: var(--hairline) solid var(--color-rule);
+  }
+
+  .credits__body {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .credits__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-top: var(--space-3);
+    max-width: none;
+  }
+
+  /* ---- Narrower ---- */
+
+  @media (width <= 62rem) {
+    .facts,
+    .why {
+      grid-template-columns: 1fr;
+      gap: var(--space-8);
+    }
+
+    .register__row {
+      grid-template-columns: 1fr;
+      gap: var(--space-4);
+    }
+
+    /* Stacked, the hairline no longer separates two columns, so it moves to
+       the top edge where it still marks "this is the answer". */
+    .register dd {
+      padding: var(--space-4) 0 0;
+      border-left: 0;
+      border-top: 1px solid var(--color-rule);
+    }
+
+    .register__row:hover dd,
+    .register__row:focus-within dd {
+      border-left-color: var(--color-rule);
+      border-top-color: var(--color-red);
+    }
+
+    .why__figure {
+      max-width: 22rem;
+    }
+  }
+
+  @media (width <= 30rem) {
+    .palette__bar {
+      padding: var(--space-4);
+    }
+
+    .palette__bar :global(.chip) {
+      width: 1.75rem;
+      height: 1.75rem;
+    }
+  }
+</style>

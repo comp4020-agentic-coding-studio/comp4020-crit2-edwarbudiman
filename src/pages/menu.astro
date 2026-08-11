@@ -1,11 +1,1124 @@
 ---
+/*
+ * The menu, as a book.
+ *
+ * Compare against the original /menu, which is a hero image, one sentence,
+ * and two links labelled "food" and "drink". The "food" link opens
+ * inari-menu-25-Jun-1.pdf: two A3 landscape spreads of press-ready artwork,
+ * crop marks and colour bars included, served to a phone.
+ *
+ * Everything Inari's kitchen already maintains — dish names, descriptions,
+ * prices, provenance, dietary markers, its own star — is in that file as
+ * structured information, flattened into print. This page gives that
+ * information a body you can read at 390px.
+ *
+ * Progressive enhancement is the load-bearing decision, not a nicety. Every
+ * one of the 16 leaves is rendered into the HTML at build time. JavaScript
+ * only decides which one is on screen. With JavaScript off the book degrades
+ * to a long scrolling menu with every dish, price and marker present — which
+ * is still strictly better than a link to a PDF. spec/crit-2.test.ts asserts
+ * this by finding all 17 dish names and prices in the built markup.
+ */
+import { Image } from "astro:assets";
+import type { ImageMetadata } from "astro";
 import Layout from "../layouts/Layout.astro";
+import RegMark from "../components/RegMark.astro";
+import Star from "../components/Star.astro";
+import {
+  ADVISORY,
+  MARKER_KEY,
+  SOURCE,
+  SURCHARGES,
+  book,
+  categories,
+  categoryStart,
+  dishById,
+  type Dietary,
+  type DishId,
+} from "../data/menu.ts";
+
+const base = import.meta.env.BASE_URL;
+
+const files = import.meta.glob<{ default: ImageMetadata }>(
+  "../assets/photos/*.webp",
+  { eager: true },
+);
+const photo = (file: string) => files[`../assets/photos/${file}.webp`].default;
+
+const total = book.length;
+const dishCount = 17;
+
+/* Computed here rather than inline: the Astro compiler reads a `<` inside a
+   template expression as the start of markup, so a generic type assertion in
+   the template breaks the build. */
+const markerKeys = Object.keys(MARKER_KEY) as Dietary[];
+
+/* Photographs are the page weight here: 27 files, several over 500KB. Only
+   the very first is eager; everything else waits. Sharp emits the srcset. */
+const WIDTHS = [420, 700, 1000, 1400];
+const SIZES = "(width <= 60rem) calc(100vw - 3rem), 34rem";
 ---
 
-<Layout title="Menu — Inari">
-  <h1>Menu</h1>
-  <p>
-    The recipe-book menu (Sections 3 and 4 of <code>TASKS.md</code>) is built
-    next, once the dish data and photo map (Section 1) are in place.
-  </p>
+<Layout
+  title="Menu — Inari"
+  description="Seventeen dishes from Inari's June 2026 menu, as a book you can read on a phone. Prices, descriptions and dietary markers exactly as Inari publishes them."
+  slugText={`Source: ${SOURCE.label} · rev ${SOURCE.slug}`}
+  slugMeta={`${dishCount} of ~${SOURCE.totalDishesApprox} dishes`}
+>
+  <div class="wrap">
+    <header class="intro section--tight">
+      <h1>The menu, as a book</h1>
+      <p class="lede">
+        Seventeen dishes, one per page. Turn them with the arrows, or jump
+        straight to a section. Everything below — every price, every
+        description, every marker — is exactly what Inari prints.
+      </p>
+
+      {/*
+        The honesty requirement, and it is not fine print: a reader must not
+        walk away thinking this is the whole menu. So the limit is stated in
+        the same breath as the offer, and the reason for it is stated too,
+        because "we only have photographs of these" is the honest reason.
+      */}
+      <div class="caveat sheet">
+        <RegMark class="caveat__mark" />
+        <p class="caveat__text">
+          This is a <strong>selection</strong>, not the full menu. Inari
+          serves roughly {SOURCE.totalDishesApprox} dishes; this book holds
+          the {dishCount} we have a photograph of, so the photo library chose
+          the running order. Two set menus and the entire drinks list are not
+          here at all.
+        </p>
+        <a class="btn caveat__btn" href={SOURCE.url}>Inari's full food menu (PDF)</a>
+      </div>
+    </header>
+  </div>
+
+  <div class="wrap">
+    <div class="book" data-book>
+      {/*
+        Bookmarks. Down the right edge on a wide screen, exactly where a
+        reader's thumb already is on a physical book; a scrolling strip above
+        the leaf on a phone, because 390px cannot carry a side rail and
+        readable text at once.
+      */}
+      <nav class="marks" aria-label="Menu sections">
+        <p class="furniture marks__title" id="marks-title">Sections</p>
+        <ul class="marks__list">
+          {
+            categories.map((cat) => {
+              const start = categoryStart.get(cat.id);
+              if (start === undefined) return null;
+              return (
+                <li>
+                  <a
+                    class="mark"
+                    href={`#${book[start].id}`}
+                    data-jump={start}
+                    data-cat={cat.id}
+                  >
+                    <span class="mark__name">{cat.name}</span>
+                    <span class="furniture mark__page">
+                      {String(start + 1).padStart(2, "0")}
+                    </span>
+                  </a>
+                </li>
+              );
+            })
+          }
+        </ul>
+      </nav>
+
+      <div class="leaves">
+        {
+          book.map((page, i) => {
+            const folio = `${String(i + 1).padStart(2, "0")}/${total}`;
+            const cat = categories.find((c) => c.id === page.category)!;
+            const first = i === 0;
+            return (
+              <article
+                class="leaf"
+                id={page.id}
+                data-leaf={i}
+                data-cat={page.category}
+                data-current={first ? "" : undefined}
+              >
+                {/* Verso: the photograph. */}
+                <div class="leaf__figure">
+                  <div class="shots" data-shots>
+                    {page.photos.map((p, j) => (
+                      <figure class="shot frame" data-shot={j} hidden={j > 0}>
+                        <Image
+                          src={photo(p.file)}
+                          alt={p.alt}
+                          widths={WIDTHS}
+                          sizes={SIZES}
+                          loading={first && j === 0 ? "eager" : "lazy"}
+                          decoding="async"
+                        />
+                      </figure>
+                    ))}
+                  </div>
+
+                  {/*
+                    Seven dishes were photographed more than once. Rather than
+                    bury the extras or pad a gallery with near-duplicates
+                    (decision-context §8 rejects exactly that), each dish
+                    switches between its own frames. Never autoplays. The
+                    arrow keys belong to the page turn, so these are buttons
+                    only.
+                  */}
+                  {page.photos.length > 1 && (
+                    <div class="dots" role="group" aria-label="Photographs of this dish">
+                      {page.photos.map((_, j) => (
+                        <button
+                          type="button"
+                          class="dot"
+                          data-dot={j}
+                          aria-current={j === 0 ? "true" : undefined}
+                        >
+                          <span class="visually-hidden">
+                            Photo {j + 1} of {page.photos.length}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Recto: the words. */}
+                <div class="leaf__text">
+                  <div class="leaf__head">
+                    <p class="furniture leaf__cat">{cat.name}</p>
+                    <p class="furniture leaf__folio">{folio}</p>
+                  </div>
+
+                  {page.kind === "opener" ? (
+                    <div class="opener">
+                      <h2 class="opener__title">{page.title}</h2>
+                      <p class="opener__caption">{page.caption}</p>
+                      <ul class="opener__list">
+                        {page.dishesShown.map((id: DishId) => {
+                          const d = dishById(id);
+                          return (
+                            <li class="mini">
+                              <div class="mini__row">
+                                <h3 class="mini__name">
+                                  {d.name}
+                                  {d.signature && <Star size={13} />}
+                                </h3>
+                                <p class="price mini__price">
+                                  ${d.prices[0].amount}
+                                </p>
+                              </div>
+                              <p class="mini__desc" data-verbatim>
+                                {d.description}
+                              </p>
+                              <p class="mini__tags">
+                                {d.dietary.map((m) => (
+                                  <span class="tag" data-dietary={m}>
+                                    {m}
+                                  </span>
+                                ))}
+                                {d.origin && (
+                                  <span class="tag tag--origin">{d.origin}</span>
+                                )}
+                              </p>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  ) : (
+                    (() => {
+                      const d = dishById(page.dish);
+                      return (
+                        <div class="dish">
+                          <h2 class="dish__name">
+                            {d.name}
+                            {d.signature && (
+                              <span class="dish__star"><Star size={22} /></span>
+                            )}
+                          </h2>
+
+                          <p class="dish__desc" data-verbatim>{d.description}</p>
+
+                          <div class="dish__prices">
+                            {d.prices.map((p) => (
+                              <p class="dish__price">
+                                {p.label && (
+                                  <span class="furniture dish__price-label">
+                                    {p.label}
+                                  </span>
+                                )}
+                                <span class="price dish__amount">${p.amount}</span>
+                              </p>
+                            ))}
+                          </div>
+
+                          <div class="dish__meta">
+                            {d.dietary.map((m) => (
+                              <span class="tag" data-dietary={m} title={MARKER_KEY[m]}>
+                                {m}
+                              </span>
+                            ))}
+                            {d.origin && (
+                              <span class="tag tag--origin">{d.origin}</span>
+                            )}
+                            {d.signature && (
+                              <span class="furniture dish__starred">
+                                Starred on Inari's menu
+                              </span>
+                            )}
+                          </div>
+
+                          {d.note && <p class="dish__note">{d.note}</p>}
+                        </div>
+                      );
+                    })()
+                  )}
+                </div>
+              </article>
+            );
+          })
+        }
+      </div>
+
+      {/* Page turn. Real buttons, keyboard-reachable, disabled at the ends. */}
+      <div class="turner">
+        <button type="button" class="btn turn" data-prev>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M15 4L7 12l8 8"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="square"></path>
+          </svg>
+          Previous
+        </button>
+
+        <p class="furniture turner__folio" data-folio>
+          Page <span data-folio-now>01</span> of {total}
+        </p>
+
+        <button type="button" class="btn turn" data-next>
+          Next
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M9 4l8 8-8 8"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="square"></path>
+          </svg>
+        </button>
+      </div>
+
+      <p class="visually-hidden" role="status" aria-live="polite" data-say></p>
+    </div>
+  </div>
+
+  {/* ---- Fine print. Inari's, reproduced exactly. ---- */}
+  <div class="wrap">
+    <section class="fine section--tight" aria-labelledby="fine-h">
+      <h2 class="fine__h" id="fine-h">What the markers mean</h2>
+
+      <div class="fine__grid">
+        <div>
+          <dl class="key">
+            {
+              markerKeys.map((m) => (
+                <div class="key__row">
+                  <dt><span class="tag" data-dietary={m}>{m}</span></dt>
+                  <dd>{MARKER_KEY[m]}</dd>
+                </div>
+              ))
+            }
+          </dl>
+
+          {/*
+            The single most important sentence on the page, and the reason
+            this site will not compute anything from the markers: GF/DF/V are
+            Inari's dietary markers, not allergen guarantees. Nothing here is
+            inferred, extended or generated.
+          */}
+          <p class="advisory" data-verbatim>{ADVISORY}</p>
+          <p class="fine__warn">
+            These are Inari's dietary markers, not allergen guarantees. This
+            site reproduces them exactly as printed and never infers, extends
+            or generates dietary, allergen or ingredient information. If
+            anything you eat matters medically, speak to the restaurant.
+          </p>
+        </div>
+
+        <div>
+          <h3 class="fine__sub">Where this comes from</h3>
+          <p class="fine__p">
+            Every dish above is transcribed from Inari's food menu, June 2026
+            — the file its own slug names <span class="furniture" data-verbatim
+              >{SOURCE.label}</span
+            >, output <span class="furniture">{SOURCE.slug}</span>. Prices and
+            markers were re-read against that document rather than carried
+            over from an earlier transcription.
+          </p>
+          <p class="fine__p">
+            One inconsistency is Inari's own and is left standing rather than
+            tidied away: the priced menu lists <em>Corn Cobs</em>, while the
+            celiac-friendly list on page 2 calls the same dish
+            <em>Corn Ribs</em>.
+          </p>
+          <p class="fine__p fine__p--sur" data-verbatim>{SURCHARGES}.</p>
+
+          <div class="fine__links">
+            <a class="btn" href={SOURCE.url}>Full food menu (PDF)</a>
+            <a class="btn" href="https://inari.restaurant/">inari.restaurant</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="cta">
+        <p class="cta__text">Seen something you want?</p>
+        <a class="btn btn--primary btn--lg" href={`${base}book/`}>Book a Table</a>
+      </div>
+    </section>
+  </div>
 </Layout>
+
+<style>
+  /* ---- Intro ---- */
+
+  .intro {
+    padding-top: var(--space-10);
+  }
+
+  .intro .lede {
+    margin-top: var(--space-5);
+    color: var(--color-ink-muted);
+  }
+
+  .caveat {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    gap: var(--space-3) var(--space-4);
+    margin-top: var(--space-8);
+    padding: var(--space-5) 0;
+    max-width: 54rem;
+  }
+
+  .caveat__mark {
+    margin-top: 0.2rem;
+  }
+
+  .caveat__text {
+    margin: 0;
+    max-width: 60ch;
+  }
+
+  .caveat__btn {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  /* ---- The book ---- */
+
+  .book {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 13rem;
+    gap: var(--space-6) var(--space-8);
+    align-items: start;
+    margin-top: var(--space-10);
+  }
+
+  .leaves {
+    grid-column: 1;
+    min-width: 0;
+  }
+
+  /* No JavaScript: every leaf stays in flow and the book reads as one long
+     menu, separated by rules. This is the default in CSS on purpose — the
+     enhanced state is what gets switched on, never the readable state. */
+  .leaf {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-8);
+    align-items: start;
+    padding-block: var(--space-8);
+    border-top: var(--hairline) solid var(--color-rule);
+  }
+
+  .leaf:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .book[data-book="on"] .leaf {
+    display: none;
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .book[data-book="on"] .leaf[data-current] {
+    display: grid;
+    animation: leaf-in var(--dur) var(--ease-out) both;
+  }
+
+  /* The one authored motion moment on this page: a leaf settling into place.
+     It lifts and fades from an already-laid-out position, so nothing depends
+     on the animation to become readable, and prefers-reduced-motion (handled
+     globally) collapses it to a snap without breaking the turn. */
+  @keyframes leaf-in {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 10px, 0);
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .leaf__figure {
+    position: relative;
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .shots {
+    position: relative;
+  }
+
+  .shot {
+    margin: 0;
+    aspect-ratio: 4 / 5;
+  }
+
+  .shot[hidden] {
+    display: none;
+  }
+
+  .shot :global(img) {
+    animation: shot-in var(--dur) var(--ease-out) both;
+  }
+
+  /* A cross-fade with a touch of scale reads as turning a plate to look
+     again. A horizontal slide would read as a carousel and fight the book. */
+  @keyframes shot-in {
+    from {
+      opacity: 0;
+      transform: scale(1.03);
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .dots {
+    display: flex;
+    gap: var(--space-2);
+    justify-content: center;
+  }
+
+  .dot {
+    width: 2.25rem;
+    height: 2.25rem;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+  }
+
+  .dot::before {
+    content: "";
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    background: var(--color-rule-strong);
+    transition:
+      background-color var(--dur-fast) var(--ease-out),
+      transform var(--dur-fast) var(--ease-out);
+  }
+
+  .dot:hover::before {
+    background: var(--color-ink-muted);
+  }
+
+  .dot[aria-current]::before {
+    background: var(--color-red);
+    transform: scale(1.5);
+  }
+
+  /* ---- The words ---- */
+
+  /* The recto is typeset to the full height of the verso rather than left to
+     top-align: the head sits on the top margin, the markers sit on the
+     bottom one, and the dish breathes between them. Top-aligned text beside
+     a tall photograph reads as an unfinished column, not as white space. */
+  .leaf__text {
+    min-width: 0;
+    padding-top: var(--space-2);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .dish,
+  .opener {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .leaf__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--space-4);
+    padding-bottom: var(--space-3);
+    border-bottom: var(--hairline) solid var(--color-rule);
+  }
+
+  .leaf__cat,
+  .leaf__folio {
+    margin: 0;
+    max-width: none;
+  }
+
+  .leaf__folio {
+    color: var(--color-rule-strong);
+  }
+
+  .dish__name,
+  .opener__title {
+    margin-top: var(--space-5);
+    font-size: clamp(1.9rem, 1.4rem + 2.2vw, 3rem);
+    line-height: 1.02;
+  }
+
+  .dish__star {
+    display: inline-block;
+    margin-left: 0.35em;
+    vertical-align: 0.12em;
+  }
+
+  .dish__desc {
+    margin-top: var(--space-4);
+    font-size: 1.0625rem;
+    color: var(--color-ink-muted);
+    max-width: 42ch;
+  }
+
+  .dish__prices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-6);
+    margin-top: var(--space-6);
+  }
+
+  .dish__price {
+    margin: 0;
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .dish__price-label {
+    margin: 0;
+    max-width: none;
+  }
+
+  .dish__amount {
+    font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem);
+    color: var(--color-red);
+    line-height: 1;
+  }
+
+  .dish__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: auto;
+    padding-top: var(--space-8);
+  }
+
+  .dish__starred {
+    margin: 0;
+    max-width: none;
+    color: var(--color-red);
+  }
+
+  .dish__note {
+    margin-top: var(--space-5);
+    padding-left: var(--space-4);
+    border-left: 1px solid var(--color-rule-strong);
+    font-size: 0.875rem;
+    color: var(--color-ink-muted);
+    max-width: 46ch;
+  }
+
+  /* ---- Openers ---- */
+
+  .opener__caption {
+    margin-top: var(--space-4);
+    color: var(--color-ink-muted);
+    max-width: 46ch;
+  }
+
+  .opener__list {
+    list-style: none;
+    margin: auto 0 0;
+    padding: var(--space-6) 0 0;
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .mini {
+    max-width: none;
+    padding-top: var(--space-4);
+    border-top: var(--hairline) solid var(--color-rule);
+  }
+
+  .mini__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--space-4);
+  }
+
+  .mini__name {
+    display: flex;
+    align-items: center;
+    gap: 0.35em;
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .mini__price {
+    margin: 0;
+    color: var(--color-red);
+    white-space: nowrap;
+  }
+
+  .mini__desc {
+    margin-top: var(--space-1);
+    font-size: 0.9375rem;
+    color: var(--color-ink-muted);
+  }
+
+  .mini__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin-top: var(--space-3);
+  }
+
+  /* ---- Bookmarks ---- */
+
+  .marks {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    position: sticky;
+    top: calc(var(--header-h) + var(--space-6));
+  }
+
+  .marks__title {
+    margin: 0 0 var(--space-3);
+    max-width: none;
+    padding-bottom: var(--space-2);
+    border-bottom: var(--hairline) solid var(--color-rule);
+  }
+
+  .marks__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 1px;
+  }
+
+  .mark {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2);
+    min-height: 2.5rem;
+    color: var(--color-ink);
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    transition:
+      background-color var(--dur-fast) var(--ease-out),
+      color var(--dur-fast) var(--ease-out);
+  }
+
+  .mark:hover {
+    background: var(--color-paper-2);
+    color: var(--color-ink);
+  }
+
+  .mark__name {
+    font-size: 0.9375rem;
+    font-weight: 500;
+  }
+
+  .mark__page {
+    color: var(--color-rule-strong);
+  }
+
+  .mark[aria-current] {
+    background: var(--color-red);
+    color: var(--color-paper);
+  }
+
+  .mark[aria-current] .mark__page {
+    color: var(--color-on-red-muted);
+  }
+
+  .mark[aria-current]:hover {
+    background: var(--color-red-deep);
+    color: var(--color-paper);
+  }
+
+  /* ---- Turner ---- */
+
+  /* Without JavaScript the whole book is already on the page, so a control
+     that turns pages would be a control that does nothing. It is hidden by
+     default and revealed only once the book is switched on. */
+  .turner {
+    grid-column: 1;
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding-top: var(--space-5);
+    border-top: var(--hairline) solid var(--color-rule);
+  }
+
+  .book[data-book="on"] .turner {
+    display: flex;
+  }
+
+  .turn {
+    min-width: 8rem;
+  }
+
+  .turner__folio {
+    margin: 0;
+    max-width: none;
+    text-align: center;
+  }
+
+  /* ---- Fine print ---- */
+
+  .fine {
+    margin-top: var(--space-12);
+    border-top: var(--hairline) solid var(--color-rule);
+  }
+
+  .fine__h {
+    font-size: var(--text-display-3);
+    margin-bottom: var(--space-6);
+  }
+
+  .fine__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+    gap: var(--space-8) var(--space-10);
+  }
+
+  .key {
+    margin: 0 0 var(--space-5);
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .key__row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .key__row dd {
+    margin: 0;
+  }
+
+  .advisory {
+    padding: var(--space-4);
+    background: var(--color-red);
+    color: var(--color-paper);
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    max-width: 46ch;
+  }
+
+  .fine__warn {
+    margin-top: var(--space-4);
+    font-size: 0.9375rem;
+    color: var(--color-ink-muted);
+    max-width: 52ch;
+  }
+
+  .fine__sub {
+    font-size: 1.0625rem;
+    margin-bottom: var(--space-3);
+  }
+
+  .fine__p {
+    margin-bottom: var(--space-3);
+    font-size: 0.9375rem;
+    color: var(--color-ink-muted);
+    max-width: 52ch;
+  }
+
+  .fine__p--sur {
+    color: var(--color-ink);
+  }
+
+  .fine__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-top: var(--space-5);
+  }
+
+  .cta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-5);
+    margin-top: var(--space-12);
+    padding-top: var(--space-8);
+    border-top: var(--hairline) solid var(--color-rule);
+  }
+
+  .cta__text {
+    font-family: var(--font-display);
+    font-size: var(--text-display-2);
+    font-weight: 700;
+    letter-spacing: var(--tracking-display);
+    margin: 0;
+  }
+
+  /* ---- Narrow ----------------------------------------------------------
+   * At 390px a side rail plus readable text does not fit, so the bookmarks
+   * become a strip that scrolls sideways above the leaf, and the spread
+   * stacks: photograph, then words.
+   */
+
+  @media (width <= 60rem) {
+    .book {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .leaf {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-5);
+    }
+
+    .marks {
+      grid-column: 1;
+      grid-row: auto;
+      position: sticky;
+      top: var(--header-h);
+      z-index: 10;
+      background: var(--color-paper);
+      padding-block: var(--space-2);
+      margin-inline: calc(var(--space-5) * -1);
+      padding-inline: var(--space-5);
+      border-bottom: var(--hairline) solid var(--color-rule);
+    }
+
+    .marks__title {
+      display: none;
+    }
+
+    .marks__list {
+      display: flex;
+      gap: var(--space-2);
+      overflow-x: auto;
+      scrollbar-width: none;
+      padding-bottom: var(--space-1);
+    }
+
+    .marks__list::-webkit-scrollbar {
+      display: none;
+    }
+
+    .mark {
+      white-space: nowrap;
+      border: var(--hairline) solid var(--color-rule-strong);
+    }
+
+    .mark__page {
+      display: none;
+    }
+
+    .turner {
+      grid-column: 1;
+      position: sticky;
+      bottom: 0;
+      background: var(--color-paper);
+      padding-bottom: var(--space-4);
+      margin-inline: calc(var(--space-5) * -1);
+      padding-inline: var(--space-5);
+    }
+
+    .turn {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .shot {
+      aspect-ratio: 4 / 3;
+    }
+
+    .caveat__btn {
+      grid-column: 1 / -1;
+    }
+  }
+</style>
+
+<script>
+  /*
+   * The book engine.
+   *
+   * Constraints it is written against:
+   *   - It never creates, fetches or injects dish content. Every leaf is
+   *     already in the HTML; this only decides which one is shown.
+   *   - Turning off JavaScript must leave a readable menu, so the enhanced
+   *     state is opted into here (data-book="on") rather than assumed in CSS.
+   *   - Arrow keys belong to the page turn. The photo switcher must not
+   *     steal them, so it is buttons only.
+   */
+  const book = document.querySelector<HTMLElement>("[data-book]");
+
+  if (book) {
+    const leaves = Array.from(book.querySelectorAll<HTMLElement>("[data-leaf]"));
+    const marks = Array.from(book.querySelectorAll<HTMLAnchorElement>("[data-jump]"));
+    const prev = book.querySelector<HTMLButtonElement>("[data-prev]");
+    const next = book.querySelector<HTMLButtonElement>("[data-next]");
+    const folioNow = book.querySelector<HTMLElement>("[data-folio-now]");
+    const say = book.querySelector<HTMLElement>("[data-say]");
+
+    let index = 0;
+
+    const pad = (n: number) => String(n + 1).padStart(2, "0");
+
+    function show(
+      n: number,
+      opts: { announce?: boolean; focus?: boolean; syncHash?: boolean } = {},
+    ) {
+      index = Math.max(0, Math.min(n, leaves.length - 1));
+
+      leaves.forEach((leaf, i) => {
+        if (i === index) leaf.setAttribute("data-current", "");
+        else leaf.removeAttribute("data-current");
+      });
+
+      const current = leaves[index];
+      const cat = current.getAttribute("data-cat");
+
+      marks.forEach((m) => {
+        if (m.getAttribute("data-cat") === cat) m.setAttribute("aria-current", "true");
+        else m.removeAttribute("aria-current");
+      });
+
+      // Stop cleanly at both ends rather than wrapping: a book has a first
+      // and a last page, and a control that silently teleports you from 16
+      // back to 1 loses your place.
+      if (prev) prev.disabled = index === 0;
+      if (next) next.disabled = index === leaves.length - 1;
+
+      if (folioNow) folioNow.textContent = pad(index);
+
+      /*
+       * replaceState, not a hash assignment: turning 16 pages should not put
+       * 16 entries in the back button.
+       *
+       * Skipped on the initial render. Chrome keeps trying to resolve the
+       * document's fragment as late-loading content arrives, so a hash
+       * written during startup gets acted on once the photographs finish and
+       * the page jumps ~1000px on its own. Landing on /menu/ should also
+       * simply not rewrite the URL.
+       */
+      if (opts.syncHash !== false) {
+        history.replaceState(null, "", `#${current.id}`);
+      }
+
+      if (opts.announce !== false && say) {
+        const heading = current.querySelector("h2");
+        say.textContent = `Page ${index + 1} of ${leaves.length}. ${heading?.textContent?.trim() ?? ""}`;
+      }
+
+      if (opts.focus) {
+        current.setAttribute("tabindex", "-1");
+        current.focus({ preventScroll: true });
+      }
+    }
+
+    prev?.addEventListener("click", () => show(index - 1, { focus: true }));
+    next?.addEventListener("click", () => show(index + 1, { focus: true }));
+
+    marks.forEach((m) => {
+      m.addEventListener("click", (e) => {
+        e.preventDefault();
+        show(Number(m.getAttribute("data-jump")), { focus: true });
+        book.scrollIntoView({ block: "start" });
+      });
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
+      if (e.key === "ArrowLeft") show(index - 1);
+      else if (e.key === "ArrowRight") show(index + 1);
+      else return;
+      e.preventDefault();
+    });
+
+    // ---- Per-dish photo switcher ----
+    leaves.forEach((leaf) => {
+      const shots = Array.from(leaf.querySelectorAll<HTMLElement>("[data-shot]"));
+      const dots = Array.from(leaf.querySelectorAll<HTMLButtonElement>("[data-dot]"));
+      if (shots.length < 2) return;
+
+      dots.forEach((dot) => {
+        dot.addEventListener("click", () => {
+          const want = Number(dot.getAttribute("data-dot"));
+          shots.forEach((s, i) => {
+            s.hidden = i !== want;
+          });
+          dots.forEach((d, i) => {
+            if (i === want) d.setAttribute("aria-current", "true");
+            else d.removeAttribute("aria-current");
+          });
+          if (say) say.textContent = `Photo ${want + 1} of ${shots.length}`;
+        });
+      });
+    });
+
+    // Deep link: /menu/#special-eel-sushi-roll opens that dish. This is what
+    // lets the home page point at one dish inside the book.
+    const fromHash = leaves.findIndex((l) => `#${l.id}` === location.hash);
+
+    // Switch the enhanced state on last, so a failure above leaves the full
+    // scrolling menu intact rather than a book that cannot turn.
+    book.setAttribute("data-book", "on");
+    show(fromHash >= 0 ? fromHash : 0, { announce: false, syncHash: false });
+
+    // Arriving on a deep link, the native fragment jump aimed at a leaf that
+    // is now the only one rendered, so put the book itself in view instead.
+    if (fromHash > 0) book.scrollIntoView({ block: "start" });
+
+    window.addEventListener("hashchange", () => {
+      const i = leaves.findIndex((l) => `#${l.id}` === location.hash);
+      if (i >= 0 && i !== index) show(i);
+    });
+  }
+</script>

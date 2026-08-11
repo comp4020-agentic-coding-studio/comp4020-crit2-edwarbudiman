@@ -1,12 +1,1324 @@
 ---
+/*
+ * Book a Table — the proof slip.
+ *
+ * The original site's primary conversion action is an empty dark rectangle
+ * under a "MAKE A BOOKING" heading: the embed renders as a blank box. The
+ * answer here is not a prettier box, it is a complete one — a form that
+ * knows Inari's service pattern and cannot offer a booking Inari would not
+ * take.
+ *
+ * Why it looks like a docket. tokens.css sets the world: this site quotes
+ * Inari's press-ready menu PDF, and print furniture does the same job here
+ * that it does on a press sheet. A booking form is the one place that world
+ * is *useful* rather than decorative — a proof slip is exactly what this
+ * page produces. So: crop marks mark where the form's sheet ends, a
+ * registration mark sits on the one line where six separate fields have to
+ * come into register as a single record, the live summary reads like a slug
+ * line, and the confirmation is a stamped proof, not a receipt. The
+ * furniture stays hairline-thin, small and monochrome; the fields
+ * themselves are large, plainly labelled and comfortable to tap at 390px.
+ *
+ * And the stamp is load-bearing, not styling. This form is FULLY DUMMY
+ * (TASKS.md §5, Edwar's explicit call after the risk was raised that a real
+ * diner could mistake it for a live booking): it validates, it summarises,
+ * it draws a proof — and it never posts anywhere. There is no action, no
+ * method, no network call of any kind in the emitted JavaScript. A proof
+ * stamp is the honest way to say so in the design rather than in fine print.
+ */
 import Layout from "../layouts/Layout.astro";
+import RegMark from "../components/RegMark.astro";
+import { Image } from "astro:assets";
+import chefAlone from "../assets/photos/chef-alone.webp";
+import { ADVISORY, kitchenPhotos } from "../data/menu";
+
+const base = import.meta.env.BASE_URL;
+
+/* Inari's real booking provider and contact, both verified (TASKS.md
+   Appendix A). Inari publishes no phone number, so this page lists none. */
+const PROVIDER =
+  "https://bookings.nowbookit.com?accountid=8a77ec9e-f282-4561-9018-8b5614c96712&colors=hex%2Cc41411&theme=dark&venueid=7812";
+const EMAIL = "hello@inari.restaurant";
+
+/* Alt text for the photography is written once, in src/data/menu.ts, and
+   reused verbatim rather than re-invented per page. If the entry ever
+   disappears the build stops instead of shipping an undescribed image. */
+const chefPhoto = kitchenPhotos.find((photo) => photo.file === "chef-alone");
+if (!chefPhoto) {
+  throw new Error("chef-alone alt text missing from src/data/menu.ts");
+}
+
+/*
+ * Seatings, derived from Inari's published dinner hours (Appendix A: Mon–Thu
+ * and Sun 5–9pm, Fri and Sat 5–9.30pm) at half-hour intervals from 5pm to
+ * the night's closing time. Lunch is closed every day, so no lunch seating
+ * exists to offer.
+ *
+ * Every option ships in the HTML. The script disables the ones the chosen
+ * night does not reach, which is the whole improvement over the original's
+ * empty embed: the picker cannot produce an impossible booking. 9.30pm
+ * therefore exists on Friday and Saturday only — and says so in its own
+ * label, so the constraint is still legible with JavaScript off.
+ */
+const seatings = [
+  { value: "17:00", label: "5:00pm" },
+  { value: "17:30", label: "5:30pm" },
+  { value: "18:00", label: "6:00pm" },
+  { value: "18:30", label: "6:30pm" },
+  { value: "19:00", label: "7:00pm" },
+  { value: "19:30", label: "7:30pm" },
+  { value: "20:00", label: "8:00pm" },
+  { value: "20:30", label: "8:30pm" },
+  { value: "21:00", label: "9:00pm" },
+  { value: "21:30", label: "9:30pm", note: "Fri & Sat only" },
+];
+
+const hours = [
+  { days: "Mon–Thu", service: "5–9pm" },
+  { days: "Fri", service: "5–9.30pm" },
+  { days: "Sat", service: "5–9.30pm" },
+  { days: "Sun", service: "5–9pm" },
+];
 ---
 
-<Layout title="Book a Table — Inari">
-  <h1>Book a Table</h1>
-  <p>
-    A static booking page (Section 5 of <code>TASKS.md</code>) lands here —
-    it links out to Inari's existing booking provider and never posts
-    anywhere itself.
-  </p>
+<Layout
+  title="Book a Table — Inari (student prototype)"
+  description="A working booking form built as a student prototype: it checks dates, offers only the seatings Inari actually serves, and books nothing. Real bookings go to Inari's own system."
+  slugText="Prototype booking docket · nothing is sent, no table is held"
+  slugMeta="Unofficial student redesign · COMP4020"
+>
+  <div class="wrap book-head section--tight">
+    <h1>Book a Table</h1>
+    <p class="lede measure">
+      Pick a night, a seating and a number of guests. This picker only offers
+      times Inari actually serves — dinner, seven nights, from 5pm — so it
+      cannot hand you a booking the kitchen would have to refuse.
+    </p>
+
+    {/*
+      Requirement: the "not a real booking" notice must be impossible to miss
+      *before* submitting, not fine print at the bottom. So it sits between
+      the heading and the form, reversed out of the deep press red (white on
+      #9d0320 measures 8.51:1 per tokens.css), and it does a second job while
+      it is there: it carries the two routes to a booking that is real.
+    */}
+    <aside class="book-notice" data-on-red aria-label="Important notice about this form">
+      <p class="book-notice__lead">
+        This form is a student prototype. It books nothing.
+      </p>
+      <p class="book-notice__body">
+        Filling it in holds no table and reaches no restaurant: nothing is
+        sent anywhere, and what you type never leaves your browser. To book a
+        table at Inari for real, use
+        <a href={PROVIDER}>Inari's own booking system</a> or email
+        <a href={`mailto:${EMAIL}`}>{EMAIL}</a>.
+      </p>
+    </aside>
+  </div>
+
+  <div class="wrap book-body">
+    {/*
+      No action, no method, no fetch — see the file header and spec line 4.
+      Submission is prevented in the script and answered on this page.
+    */}
+    <form class="booking-form sheet" data-booking-form novalidate>
+      <div class="form-head">
+        <h2 class="form-head__title">Booking details</h2>
+        <p class="furniture furniture--red form-head__mark">Proof · not a booking</p>
+      </div>
+      <hr class="rule" />
+
+      <noscript>
+        <p class="no-js-note">
+          Without JavaScript this form cannot check your date or build a
+          summary — and it still books nothing either way.
+          <a href={PROVIDER}>Inari's own booking system</a> is the one that
+          holds real tables.
+        </p>
+      </noscript>
+
+      <div class="field-grid">
+        <div class="field">
+          <label class="field__label" for="book-date">Date</label>
+          <p class="field__hint" id="book-date-hint">
+            Dinner is served seven nights a week. Today or later.
+          </p>
+          <input
+            class="field__input"
+            type="date"
+            id="book-date"
+            name="date"
+            required
+            autocomplete="off"
+            aria-describedby="book-date-hint book-date-error"
+          />
+          <p class="field__error" id="book-date-error"></p>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="book-time">Seating time</label>
+          <p class="field__hint" id="book-time-hint" data-time-hint>
+            Pick a date and this fills with the seatings Inari serves that
+            night.
+          </p>
+          <select
+            class="field__input field__input--select"
+            id="book-time"
+            name="time"
+            required
+            aria-describedby="book-time-hint book-time-error"
+          >
+            <option value="">Choose a seating</option>
+            {
+              seatings.map((seating) => (
+                <option value={seating.value} data-label={seating.label}>
+                  {seating.note
+                    ? `${seating.label} — ${seating.note}`
+                    : seating.label}
+                </option>
+              ))
+            }
+          </select>
+          <p class="field__error" id="book-time-error"></p>
+        </div>
+
+        <div class="field field--short">
+          <label class="field__label" for="book-guests">Guests</label>
+          <p class="field__hint" id="book-guests-hint">
+            1 to 20 in this prototype.
+          </p>
+          <input
+            class="field__input"
+            type="number"
+            id="book-guests"
+            name="guests"
+            inputmode="numeric"
+            min="1"
+            max="20"
+            step="1"
+            required
+            aria-describedby="book-guests-hint book-guests-error"
+          />
+          <p class="field__error" id="book-guests-error"></p>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="book-name">Name</label>
+          <p class="field__hint" id="book-name-hint">
+            Whose name the table would be under.
+          </p>
+          <input
+            class="field__input"
+            type="text"
+            id="book-name"
+            name="name"
+            required
+            autocomplete="name"
+            aria-describedby="book-name-hint book-name-error"
+          />
+          <p class="field__error" id="book-name-error"></p>
+        </div>
+
+        <div class="field field--full">
+          <label class="field__label" for="book-email">Email</label>
+          <p class="field__hint" id="book-email-hint">
+            Where a confirmation would go, if this form sent one. It does not.
+          </p>
+          <input
+            class="field__input"
+            type="email"
+            id="book-email"
+            name="email"
+            required
+            autocomplete="email"
+            aria-describedby="book-email-hint book-email-error"
+          />
+          <p class="field__error" id="book-email-error"></p>
+        </div>
+
+        <div class="field field--full">
+          <label class="field__label" for="book-notes">Notes</label>
+          <p class="field__hint" id="book-notes-hint">
+            Optional. Dietary requirements are not handled here, and this
+            prototype is not the place to declare one — Inari's own advice on
+            its June 2026 menu is: “<span data-verbatim>{ADVISORY}</span>”
+          </p>
+          <textarea
+            class="field__input field__input--area"
+            id="book-notes"
+            name="notes"
+            rows="3"
+            aria-describedby="book-notes-hint"></textarea>
+        </div>
+      </div>
+
+      {/*
+        Ten or more guests is the one party size with real published
+        consequences, so it is surfaced as information rather than as an
+        error — and it is the size at which lunch exists at all.
+      */}
+      <p class="group-note" data-group-note hidden>
+        Ten guests or more: Inari applies a 10% service charge to groups this
+        size (stated on its June 2026 menu), and a group of ten is also the
+        only way lunch happens — see the note beside this form.
+      </p>
+
+      {/*
+        The live summary. On a press sheet the slug is the line that says what
+        this document actually is; here it says what the booking actually is,
+        and it is the one point where six separate fields have to come into
+        register as a single record — which is the job a registration mark
+        does, so one sits on it.
+      */}
+      <div class="docket" role="group" aria-label="Current selection">
+        <RegMark class="docket__mark" size={15} />
+        <dl class="docket__list" aria-live="polite">
+          <div class="docket__cell">
+            <dt>Guests</dt>
+            <dd class="price" data-out="guests">—</dd>
+          </div>
+          <div class="docket__cell">
+            <dt>Date</dt>
+            <dd class="price" data-out="date">—</dd>
+          </div>
+          <div class="docket__cell">
+            <dt>Seating</dt>
+            <dd class="price" data-out="time">—</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="submit-row">
+        <p class="form-alert" data-form-alert role="alert"></p>
+        <button class="btn btn--primary btn--lg" type="submit">
+          Submit — prototype only
+        </button>
+        <p class="submit-note">
+          Nothing is sent. This draws a proof slip on this page, and that is
+          all it can do.
+        </p>
+      </div>
+    </form>
+
+    {/*
+      The post-submit state. A proof, stamped — not a confirmation. It repeats
+      the two real routes, because "what do I do now that I actually want a
+      table" is the only useful next step from here.
+    */}
+    <section
+      class="book-confirm sheet"
+      data-confirmation
+      hidden
+      tabindex="-1"
+      aria-labelledby="book-confirm-title"
+    >
+      <p class="stamp">
+        <span class="stamp__text furniture">Proof only · no table is held</span>
+      </p>
+      <h2 class="form-head__title" id="book-confirm-title">
+        This is what your booking would have said
+      </h2>
+      <p class="measure">
+        Nothing was sent and no table is held. Every field below was checked
+        against Inari's real service pattern, and then written straight back to
+        you — this page has no restaurant on the other end of it.
+      </p>
+
+      <dl class="confirm-list">
+        <div class="confirm-list__row">
+          <dt>Date</dt>
+          <dd class="price" data-out="conf-date">—</dd>
+        </div>
+        <div class="confirm-list__row">
+          <dt>Seating</dt>
+          <dd class="price" data-out="conf-time">—</dd>
+        </div>
+        <div class="confirm-list__row">
+          <dt>Guests</dt>
+          <dd class="price" data-out="conf-guests">—</dd>
+        </div>
+        <div class="confirm-list__row">
+          <dt>Name</dt>
+          <dd data-out="conf-name">—</dd>
+        </div>
+        <div class="confirm-list__row">
+          <dt>Email</dt>
+          <dd data-out="conf-email">—</dd>
+        </div>
+        <div class="confirm-list__row" data-notes-row hidden>
+          <dt>Notes</dt>
+          <dd data-out="conf-notes">—</dd>
+        </div>
+      </dl>
+
+      {/*
+        Inari's own menu PDF carries a printer's slug — "inari menu 25 Jun.pdf
+        1 25/6/2026 14:09" — the one line on that document that says where it
+        came from and how current it is. A proof gets the same line, in the
+        same format, and it is telling the truth about where this one was
+        made: in your browser, a moment ago.
+      */}
+      <p class="furniture confirm-slug">
+        Stamped in your browser · <span data-out="conf-stamped"></span> · sent
+        nowhere
+      </p>
+
+      <hr class="rule" />
+
+      <p class="measure">
+        To hold a table for real, use
+        <a href={PROVIDER}>Inari's own booking system</a> or email
+        <a href={`mailto:${EMAIL}`}>{EMAIL}</a>.
+      </p>
+
+      <button class="btn" type="button" data-restart>Fill it in again</button>
+    </section>
+
+    <aside class="book-aside" aria-label="When Inari serves">
+      <div class="aside-panel">
+        <h2 class="aside-panel__title">When Inari serves</h2>
+        <p class="aside-panel__lead">
+          Lunch is closed every day. Dinner is the only service, and it runs
+          seven nights a week.
+        </p>
+        <dl class="hours-list">
+          {
+            hours.map((row) => (
+              <div class="hours-list__row">
+                <dt>{row.days}</dt>
+                <dd class="price">{row.service}</dd>
+              </div>
+            ))
+          }
+        </dl>
+        <p class="aside-panel__note">
+          Hours as published by Inari. Its own booking system is the authority
+          on availability; this prototype only knows the pattern.
+        </p>
+      </div>
+
+      <hr class="rule" />
+
+      <div class="aside-panel">
+        <h3 class="aside-panel__title aside-panel__title--sub">
+          The one exception: a lunch for ten
+        </h3>
+        <p>
+          There is no walk-up lunch on any day. A group of ten or more can
+          arrange one in advance, and that is a conversation rather than a
+          form — email <a href={`mailto:${EMAIL}`}>{EMAIL}</a> and ask.
+        </p>
+      </div>
+
+      {/*
+        One photograph, and one only: this page is a task, not a gallery. Its
+        job is to say what a 5pm-to-9pm restaurant is — one pass, one service,
+        every night — which is the fact the whole picker above is built on.
+        No text sits on it, so it needs no scrim.
+      */}
+      <figure class="aside-figure">
+        <div class="frame aside-figure__frame">
+          <Image
+            src={chefAlone}
+            alt={chefPhoto.alt}
+            width={720}
+            height={900}
+            loading="lazy"
+            sizes="(max-width: 60rem) 90vw, 24rem"
+          />
+        </div>
+        <figcaption class="aside-figure__caption">
+          Dinner service. Photo credit: Inari.
+        </figcaption>
+      </figure>
+
+      <hr class="rule" />
+
+      <p class="aside-panel__note">
+        <a href={`${base}menu/`}>Read the menu selection</a> before you pick a
+        night, or open
+        <a href="https://inari.restaurant/">inari.restaurant</a> for Inari's
+        own site.
+      </p>
+    </aside>
+  </div>
 </Layout>
+
+<script>
+  /*
+   * Booking form behaviour. Plain DOM only: no network call of any kind is
+   * possible from this file — spec/crit-2.test.ts asserts the emitted
+   * JavaScript contains neither fetch nor XMLHttpRequest, and the form has
+   * no action and no method, so submit is simply prevented and answered
+   * here.
+   */
+  const form = document.querySelector<HTMLFormElement>("[data-booking-form]");
+  const dateField = document.querySelector<HTMLInputElement>("#book-date");
+  const timeField = document.querySelector<HTMLSelectElement>("#book-time");
+  const guestsField = document.querySelector<HTMLInputElement>("#book-guests");
+  const nameField = document.querySelector<HTMLInputElement>("#book-name");
+  const emailField = document.querySelector<HTMLInputElement>("#book-email");
+  const notesField =
+    document.querySelector<HTMLTextAreaElement>("#book-notes");
+  const timeHint = document.querySelector<HTMLElement>("[data-time-hint]");
+  const groupNote = document.querySelector<HTMLElement>("[data-group-note]");
+  const formAlert = document.querySelector<HTMLElement>("[data-form-alert]");
+  const confirmation =
+    document.querySelector<HTMLElement>("[data-confirmation]");
+  const notesRow = document.querySelector<HTMLElement>("[data-notes-row]");
+  const restart = document.querySelector<HTMLButtonElement>("[data-restart]");
+
+  type Field = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+
+  if (
+    form &&
+    dateField &&
+    timeField &&
+    guestsField &&
+    nameField &&
+    emailField &&
+    notesField &&
+    timeHint &&
+    groupNote &&
+    formAlert &&
+    confirmation &&
+    notesRow &&
+    restart
+  ) {
+    /* Inari's published dinner hours, indexed by Date#getDay() (0 = Sunday):
+       Mon–Thu and Sun close at 9pm, Fri and Sat at 9.30pm. The last seating
+       offered is the closing time, and the page says where the times come
+       from rather than implying more precision than Inari publishes. */
+    const LAST_SEATING = [
+      "21:00",
+      "21:00",
+      "21:00",
+      "21:00",
+      "21:00",
+      "21:30",
+      "21:30",
+    ];
+    const CLOSING_LABEL: Record<string, string> = {
+      "21:00": "9pm",
+      "21:30": "9.30pm",
+    };
+    const DAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const DAY_LONG = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
+    const MONTH_SHORT = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+
+    const outputs = new Map<string, HTMLElement>();
+    document.querySelectorAll<HTMLElement>("[data-out]").forEach((el) => {
+      const key = el.dataset.out;
+      if (key) outputs.set(key, el);
+    });
+
+    const write = (key: string, value: string) => {
+      const el = outputs.get(key);
+      if (el) el.textContent = value;
+    };
+
+    const pad = (n: number) => String(n).padStart(2, "0");
+
+    /* Parse the date input's value as a LOCAL date. new Date("2026-08-14")
+       is parsed as UTC, which lands on the previous day west of Greenwich —
+       a "date in the past" check must not depend on the reader's timezone. */
+    const parseDate = (value: string): Date | null => {
+      const parts = value.split("-");
+      if (parts.length !== 3) return null;
+      const year = Number(parts[0]);
+      const month = Number(parts[1]);
+      const day = Number(parts[2]);
+      if (
+        Number.isNaN(year) ||
+        Number.isNaN(month) ||
+        Number.isNaN(day) ||
+        year < 1000
+      ) {
+        return null;
+      }
+      const date = new Date(year, month - 1, day);
+      const roundTrips =
+        date.getFullYear() === year &&
+        date.getMonth() === month - 1 &&
+        date.getDate() === day;
+      return roundTrips ? date : null;
+    };
+
+    const now = new Date();
+    const today = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+
+    const formatDate = (date: Date) =>
+      `${DAY_SHORT[date.getDay()] ?? ""} ${date.getDate()} ${
+        MONTH_SHORT[date.getMonth()] ?? ""
+      } ${date.getFullYear()}`;
+
+    const closingFor = (date: Date) => LAST_SEATING[date.getDay()] ?? "21:00";
+    const closingLabelFor = (date: Date) =>
+      CLOSING_LABEL[closingFor(date)] ?? "9pm";
+
+    /* Errors name the problem and the recovery, and are wired to the field
+       through aria-describedby (already in the markup) plus aria-invalid. An
+       empty message is the cleared state; CSS hides an empty error. */
+    const setError = (field: Field, message: string) => {
+      const box = document.getElementById(`${field.id}-error`);
+      if (box) box.textContent = message;
+      const wrapper = field.closest(".field");
+      if (message) {
+        field.setAttribute("aria-invalid", "true");
+        wrapper?.classList.add("field--error");
+      } else {
+        field.removeAttribute("aria-invalid");
+        wrapper?.classList.remove("field--error");
+      }
+    };
+
+    const clearAllErrors = () => {
+      for (const field of [
+        dateField,
+        timeField,
+        guestsField,
+        nameField,
+        emailField,
+      ]) {
+        setError(field, "");
+      }
+      formAlert.textContent = "";
+    };
+
+    /* The constraint that makes this better than an empty embed: the options
+       a night cannot reach are disabled and hidden, so the picker cannot
+       offer a seating Inari does not serve. */
+    const refreshSeatings = () => {
+      const date = parseDate(dateField.value);
+
+      if (!date) {
+        timeField.disabled = true;
+        timeField.value = "";
+        timeHint.textContent =
+          "Pick a date and this fills with the seatings Inari serves that night.";
+        return;
+      }
+
+      timeField.disabled = false;
+      const closing = closingFor(date);
+      let selectionLost = false;
+
+      for (const option of Array.from(timeField.options)) {
+        if (!option.value) continue;
+        const beyondClosing = option.value > closing;
+        option.disabled = beyondClosing;
+        option.hidden = beyondClosing;
+        if (beyondClosing && option.selected) selectionLost = true;
+      }
+
+      if (selectionLost) {
+        timeField.value = "";
+        setError(
+          timeField,
+          `Dinner ends at ${closingLabelFor(date)} on a ${
+            DAY_LONG[date.getDay()] ?? "weeknight"
+          }, so that seating is not offered. Pick an earlier one.`,
+        );
+      }
+
+      timeHint.textContent = `Dinner on ${
+        DAY_LONG[date.getDay()] ?? "that night"
+      } runs 5pm to ${closingLabelFor(date)}, every half hour.`;
+    };
+
+    const updateSummary = () => {
+      const guests = Number(guestsField.value);
+      const guestsValid =
+        guestsField.value !== "" && Number.isInteger(guests) && guests >= 1;
+      write(
+        "guests",
+        guestsValid ? `${guests} ${guests === 1 ? "guest" : "guests"}` : "—",
+      );
+
+      const date = parseDate(dateField.value);
+      write("date", date ? formatDate(date) : "—");
+
+      const option = timeField.selectedOptions[0];
+      write(
+        "time",
+        option && option.value ? (option.dataset.label ?? option.value) : "—",
+      );
+
+      groupNote.hidden = !(guestsValid && guests >= 10);
+    };
+
+    const validate = (): Field | null => {
+      let firstInvalid: Field | null = null;
+      const fail = (field: Field, message: string) => {
+        setError(field, message);
+        if (!firstInvalid) firstInvalid = field;
+      };
+
+      const date = parseDate(dateField.value);
+      if (!date) {
+        fail(
+          dateField,
+          "Choose the date you would like to dine — dinner is served seven nights a week.",
+        );
+      } else if (date.getTime() < today.getTime()) {
+        fail(
+          dateField,
+          "That date has already passed. Pick today or any night after it.",
+        );
+      } else {
+        setError(dateField, "");
+      }
+
+      const option = timeField.selectedOptions[0];
+      if (!option || !option.value) {
+        fail(
+          timeField,
+          date
+            ? `Choose a seating. On a ${
+                DAY_LONG[date.getDay()] ?? "weeknight"
+              } they run from 5pm to ${closingLabelFor(date)}.`
+            : "Choose a date first, then a seating for that night.",
+        );
+      } else if (date && option.value > closingFor(date)) {
+        fail(
+          timeField,
+          `Dinner ends at ${closingLabelFor(
+            date,
+          )} that night, so that seating is not offered. Pick an earlier one.`,
+        );
+      } else {
+        setError(timeField, "");
+      }
+
+      const guests = Number(guestsField.value);
+      if (guestsField.value.trim() === "") {
+        fail(guestsField, "Enter how many people are coming — one or more.");
+      } else if (!Number.isInteger(guests)) {
+        fail(
+          guestsField,
+          "Enter a whole number of guests, anywhere from 1 to 20.",
+        );
+      } else if (guests < 1) {
+        fail(guestsField, "A table needs at least one guest. Enter 1 or more.");
+      } else if (guests > 20) {
+        fail(
+          guestsField,
+          "This prototype stops at 20 guests. For a larger table, use Inari's own booking system, linked above.",
+        );
+      } else {
+        setError(guestsField, "");
+      }
+
+      if (nameField.value.trim() === "") {
+        fail(nameField, "Enter the name this table would be under.");
+      } else {
+        setError(nameField, "");
+      }
+
+      const email = emailField.value.trim();
+      if (email === "") {
+        fail(
+          emailField,
+          "Enter an email address — it is where a confirmation would go, if this form sent one.",
+        );
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        fail(
+          emailField,
+          "That does not look like an email address. Check for a missing @ or a missing domain, such as name@example.com.",
+        );
+      } else {
+        setError(emailField, "");
+      }
+
+      return firstInvalid;
+    };
+
+    const showProof = () => {
+      const date = parseDate(dateField.value);
+      const option = timeField.selectedOptions[0];
+      const guests = Number(guestsField.value);
+      const notes = notesField.value.trim();
+
+      write("conf-date", date ? formatDate(date) : "—");
+      write(
+        "conf-time",
+        option && option.value ? (option.dataset.label ?? option.value) : "—",
+      );
+      write("conf-guests", `${guests} ${guests === 1 ? "guest" : "guests"}`);
+      write("conf-name", nameField.value.trim());
+      write("conf-email", emailField.value.trim());
+      write("conf-notes", notes);
+      notesRow.hidden = notes === "";
+
+      /* Same shape as the printer's slug on Inari's own menu PDF
+         ("25/6/2026 14:09"), because it is doing the same job. */
+      const stamped = new Date();
+      write(
+        "conf-stamped",
+        `${stamped.getDate()}/${
+          stamped.getMonth() + 1
+        }/${stamped.getFullYear()} ${pad(stamped.getHours())}:${pad(
+          stamped.getMinutes(),
+        )}`,
+      );
+
+      form.hidden = true;
+      confirmation.hidden = false;
+      confirmation.focus();
+    };
+
+    form.addEventListener("submit", (event) => {
+      /* Nothing leaves this page, ever. */
+      event.preventDefault();
+      const firstInvalid = validate();
+      if (firstInvalid) {
+        formAlert.textContent =
+          "This is not ready yet — the fields that need attention are marked below.";
+        firstInvalid.focus();
+        return;
+      }
+      formAlert.textContent = "";
+      showProof();
+    });
+
+    restart.addEventListener("click", () => {
+      form.reset();
+      clearAllErrors();
+      confirmation.hidden = true;
+      form.hidden = false;
+      refreshSeatings();
+      updateSummary();
+      dateField.focus();
+    });
+
+    dateField.addEventListener("input", () => {
+      setError(dateField, "");
+      refreshSeatings();
+      updateSummary();
+    });
+
+    timeField.addEventListener("change", () => {
+      setError(timeField, "");
+      updateSummary();
+    });
+
+    guestsField.addEventListener("input", () => {
+      setError(guestsField, "");
+      updateSummary();
+    });
+
+    nameField.addEventListener("input", () => setError(nameField, ""));
+    emailField.addEventListener("input", () => setError(emailField, ""));
+
+    /* Progressive enhancement, both ways round: the markup keeps native
+       required/min/max so a reader without JavaScript still gets the
+       browser's own checks, and with JavaScript this file owns the messages
+       so they can name a recovery. */
+    form.noValidate = true;
+    dateField.min = `${today.getFullYear()}-${pad(
+      today.getMonth() + 1,
+    )}-${pad(today.getDate())}`;
+
+    refreshSeatings();
+    updateSummary();
+  }
+</script>
+
+<style>
+  /* ---- Head ---------------------------------------------------------------- */
+
+  .book-head {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  /* The notice. Reversed out of the deep press red the menu PDF floods its
+     own panels with (8.51:1 with paper, per tokens.css). One elevation
+     decision: a filled panel, so no border and no shadow. */
+  .book-notice {
+    max-width: 54rem;
+    padding: var(--space-5) var(--space-6);
+    border-radius: var(--radius);
+    background: var(--color-red-deep);
+    color: var(--color-paper);
+  }
+
+  .book-notice__lead {
+    font-family: var(--font-display);
+    font-size: clamp(1.25rem, 1.1rem + 0.7vw, 1.625rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    max-width: 30ch;
+  }
+
+  .book-notice__body {
+    margin-top: var(--space-3);
+    max-width: 62ch;
+  }
+
+  .book-notice a {
+    color: var(--color-paper);
+    text-decoration-color: var(--color-on-red-muted);
+  }
+
+  .book-notice a:hover {
+    color: var(--color-on-red-muted);
+  }
+
+  /* ---- Body layout --------------------------------------------------------- */
+
+  .book-body {
+    display: grid;
+    gap: var(--space-10);
+    align-items: start;
+    padding-bottom: var(--space-6);
+  }
+
+  @media (width >= 62rem) {
+    .book-body {
+      grid-template-columns: minmax(0, 1.45fr) minmax(0, 0.85fr);
+      gap: var(--space-10) var(--space-12);
+    }
+
+    /* The proof replaces the form in the same column, so the page does not
+       reflow around it. */
+    .booking-form,
+    .book-confirm {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .book-aside {
+      grid-column: 2;
+      grid-row: 1;
+    }
+  }
+
+  /* ---- The form sheet ------------------------------------------------------ */
+
+  .booking-form {
+    padding: clamp(var(--space-5), 3.5vw, var(--space-8));
+    border-radius: var(--radius);
+    background: var(--color-cream);
+  }
+
+  .form-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-5);
+    margin-bottom: var(--space-3);
+  }
+
+  .form-head__title {
+    font-size: clamp(1.375rem, 1.2rem + 0.8vw, 1.75rem);
+  }
+
+  .form-head__mark {
+    margin: 0;
+    max-width: none;
+  }
+
+  .no-js-note {
+    margin-top: var(--space-5);
+    padding: var(--space-4);
+    border-radius: var(--radius-sm);
+    background: var(--color-paper);
+    font-size: 0.9375rem;
+  }
+
+  /* ---- Fields -------------------------------------------------------------- */
+
+  .field-grid {
+    display: grid;
+    gap: var(--space-5);
+    margin-top: var(--space-6);
+  }
+
+  @media (width >= 34rem) {
+    .field-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .field--full {
+      grid-column: 1 / -1;
+    }
+  }
+
+  .field {
+    display: grid;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+
+  /* Mono, uppercase and tracked: these label data, which is the one job the
+     furniture voice is allowed to do. Set at 13px rather than the 11px
+     furniture size, because a form label has to be read, not glanced at. */
+  .field__label {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-ink);
+  }
+
+  .field__hint {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--color-ink-muted);
+    max-width: 46ch;
+  }
+
+  .field__input {
+    width: 100%;
+    min-height: 3rem;
+    margin-top: var(--space-1);
+    padding: var(--space-3) var(--space-4);
+    border: var(--hairline) solid var(--color-rule-strong);
+    border-radius: var(--radius-sm);
+    background: var(--color-paper);
+    font-size: 1.0625rem;
+    line-height: 1.4;
+    transition:
+      border-color var(--dur-fast) var(--ease-out),
+      background-color var(--dur-fast) var(--ease-out);
+  }
+
+  .field__input:hover:enabled {
+    border-color: var(--color-ink-muted);
+  }
+
+  .field__input:focus {
+    border-color: var(--color-ink);
+  }
+
+  .field__input:disabled {
+    background: var(--color-paper-2);
+    color: var(--color-ink-muted);
+    cursor: not-allowed;
+  }
+
+  /* Native chevron replaced with an authored one — no glyph fonts, per the
+     craft floor. Ink at 12px, drawn as a path rather than a character. */
+  .field__input--select {
+    appearance: none;
+    padding-right: var(--space-8);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5 6 6.5l5-5' stroke='%23150f0b' stroke-width='1.5' stroke-linecap='square'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right var(--space-4) center;
+  }
+
+  .field__input--select:disabled {
+    opacity: 1;
+  }
+
+  .field__input--area {
+    min-height: 6rem;
+    resize: vertical;
+  }
+
+  .field__error {
+    font-size: 0.875rem;
+    line-height: 1.45;
+    font-weight: 500;
+    color: var(--color-red);
+    max-width: 52ch;
+  }
+
+  .field__error:empty {
+    display: none;
+  }
+
+  .field--error .field__input {
+    border-color: var(--color-red);
+    background: var(--color-paper);
+  }
+
+  .field--short .field__input {
+    max-width: 9rem;
+  }
+
+  /* ---- Notes on the record ------------------------------------------------- */
+
+  .group-note {
+    margin-top: var(--space-5);
+    padding: var(--space-4);
+    border-radius: var(--radius-sm);
+    background: var(--color-paper);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    max-width: 60ch;
+  }
+
+  /* ---- The docket line ---------------------------------------------------- */
+
+  .docket {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-4);
+    margin-top: var(--space-6);
+    padding-top: var(--space-5);
+    border-top: var(--hairline) solid var(--color-rule-strong);
+  }
+
+  .docket__mark {
+    margin-top: 0.35rem;
+  }
+
+  .docket__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3) var(--space-6);
+    margin: 0;
+  }
+
+  .docket__cell {
+    display: grid;
+    gap: 0.1rem;
+  }
+
+  .docket__cell dt {
+    font-family: var(--font-mono);
+    font-size: var(--text-furniture);
+    letter-spacing: var(--tracking-furniture);
+    text-transform: uppercase;
+    color: var(--color-ink-muted);
+  }
+
+  .docket__cell dd {
+    margin: 0;
+    font-size: 1.125rem;
+    color: var(--color-ink);
+  }
+
+  /* ---- Submit ------------------------------------------------------------- */
+
+  .submit-row {
+    display: grid;
+    gap: var(--space-3);
+    margin-top: var(--space-6);
+    justify-items: start;
+  }
+
+  .form-alert {
+    font-weight: 600;
+    color: var(--color-red);
+    max-width: 52ch;
+  }
+
+  .form-alert:empty {
+    display: none;
+  }
+
+  .submit-note {
+    font-size: 0.875rem;
+    color: var(--color-ink-muted);
+    max-width: 48ch;
+  }
+
+  /* At 390px the sheet's own padding leaves the large button too little room
+     for its label, and a two-line button reads as an accident. Tighten the
+     horizontal padding rather than shorten the label — "prototype only" is
+     the part that has to survive. */
+  @media (width <= 30rem) {
+    .submit-row .btn {
+      padding-inline: var(--space-5);
+    }
+  }
+
+  /* ---- The proof ---------------------------------------------------------- */
+
+  .book-confirm {
+    padding: clamp(var(--space-5), 3.5vw, var(--space-8));
+    border-radius: var(--radius);
+    background: var(--color-cream);
+  }
+
+  .book-confirm[hidden] {
+    display: none;
+  }
+
+  .book-confirm:not([hidden]) {
+    display: grid;
+    gap: var(--space-5);
+    justify-items: start;
+
+    /* The one authored motion moment on this page: the slip settles onto the
+       sheet. Transform only — the text is fully legible from the first
+       frame, so nothing depends on the animation running. Reduced motion is
+       handled globally in global.css. */
+    animation: proof-settle var(--dur) var(--ease-out) both;
+  }
+
+  @keyframes proof-settle {
+    from {
+      transform: translateY(0.5rem);
+    }
+
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  /* A proof stamp: the mark a press proof carries so it can never be
+     mistaken for the final sheet. Which is precisely this page's problem. */
+  .stamp {
+    margin: 0;
+    transform: rotate(-1.5deg);
+  }
+
+  .stamp__text {
+    display: inline-block;
+    padding: var(--space-2) var(--space-4);
+    border: var(--hairline) solid var(--color-red);
+    border-radius: var(--radius-sm);
+    color: var(--color-red);
+  }
+
+  .confirm-list {
+    display: grid;
+    gap: 0;
+    margin: 0;
+    width: 100%;
+    max-width: 34rem;
+  }
+
+  .confirm-list__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-5);
+    padding-block: var(--space-3);
+    border-bottom: var(--hairline) solid var(--color-rule);
+  }
+
+  .confirm-list__row[hidden] {
+    display: none;
+  }
+
+  .confirm-list__row dt {
+    font-family: var(--font-mono);
+    font-size: var(--text-furniture);
+    letter-spacing: var(--tracking-furniture);
+    text-transform: uppercase;
+    color: var(--color-ink-muted);
+  }
+
+  .confirm-list__row dd {
+    margin: 0;
+    font-size: 1.0625rem;
+    text-align: right;
+    max-width: 24rem;
+  }
+
+  .confirm-slug {
+    text-transform: none;
+    letter-spacing: 0.02em;
+  }
+
+  .book-confirm .rule {
+    width: 100%;
+  }
+
+  /* ---- Aside -------------------------------------------------------------- */
+
+  .book-aside {
+    display: grid;
+    gap: var(--space-6);
+    align-content: start;
+  }
+
+  .aside-panel {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .aside-panel__title {
+    font-size: 1.25rem;
+  }
+
+  .aside-panel__title--sub {
+    font-size: 1.0625rem;
+  }
+
+  .aside-panel__lead {
+    font-weight: 600;
+    max-width: 30ch;
+  }
+
+  .aside-panel__note {
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--color-ink-muted);
+  }
+
+  .hours-list {
+    margin: 0;
+    display: grid;
+    gap: 0;
+  }
+
+  .hours-list__row {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding-block: var(--space-2);
+    border-bottom: var(--hairline) dotted var(--color-rule-strong);
+  }
+
+  .hours-list__row dt {
+    color: var(--color-ink-muted);
+  }
+
+  .hours-list__row dd {
+    margin: 0;
+  }
+
+  .aside-figure {
+    margin: 0;
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  /* Capped well below the column width on purpose: at full width the
+     photograph starts competing with the form for attention, and this page is
+     a task. An inset plate, not a banner. */
+  .aside-figure__frame {
+    aspect-ratio: 4 / 5;
+    max-width: 17rem;
+  }
+
+  .aside-figure__caption {
+    font-size: 0.8125rem;
+    color: var(--color-ink-muted);
+  }
+</style>

@@ -145,7 +145,13 @@ describe("spec line 4 — booking never posts anywhere", () => {
   it("has no form with an action pointing off-page", () => {
     for (const { name, doc } of pages) {
       for (const form of doc.querySelectorAll("form")) {
-        const action = form.getAttribute("action");
+        // A form carrying no action attribute at all is the strongest pass
+        // available: it cannot post off-page because it names nowhere to
+        // post to. getAttribute returns null in that case, and .not.toMatch
+        // throws on a non-string, so the original assertion errored on
+        // exactly the markup it was written to reward. Normalise first —
+        // absent and empty are both "no off-page action".
+        const action = form.getAttribute("action") ?? "";
         expect(action, `${name}: <form action="${action}">`).not.toMatch(
           /^https?:\/\//i,
         );

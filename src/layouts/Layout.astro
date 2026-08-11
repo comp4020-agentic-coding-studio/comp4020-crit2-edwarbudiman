@@ -1,17 +1,29 @@
 ---
 import "../styles/global.css";
-import kitsuneLogo from "../assets/photos/inari-logo.webp";
+import kitsune from "../assets/photos/inari-logo.webp";
+import ColourBar from "../components/ColourBar.astro";
+import Slug from "../components/Slug.astro";
+import { Image } from "astro:assets";
 
 interface Props {
   title: string;
+  description?: string;
+  /** Overrides the site-wide slug. The menu page cites the source PDF here. */
+  slugText?: string;
+  slugMeta?: string;
 }
 
-const { title } = Astro.props;
+const {
+  title,
+  description = "An unofficial student redesign of Inari, a Japanese restaurant in Canberra. Built for COMP4020 at ANU.",
+  slugText = "Unofficial student redesign · not affiliated with Inari",
+  slugMeta = "COMP4020 · Crit 2 · ANU",
+} = Astro.props;
+
 const base = import.meta.env.BASE_URL;
 const path = Astro.url.pathname;
 
-// aria-current matches the exact route, not a prefix — "/" must not also
-// mark "/menu/" as current just because both start with the base path.
+// Exact-match, not prefix: "/" must not also mark "/menu/" as current.
 const isCurrent = (href: string) => path === href;
 
 const navLinks = [
@@ -28,21 +40,45 @@ const bookHref = `${base}book/`;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#150f0b" />
+    <link rel="icon" href={kitsune.src} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
     />
   </head>
+
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
 
+    {/*
+      The slug strip. A printer's slug carries the one thing a proof must
+      never lose: what this document is and where it came from. The
+      disclosure that this is not Inari's own site is exactly that kind of
+      fact, so it lives here — above everything, on every page — rather than
+      in small print at the bottom where a disclaimer usually goes to die.
+    */}
+    <div class="slug-strip">
+      <Slug class="wrap" meta={slugMeta}>{slugText}</Slug>
+    </div>
+
     <header class="site-header">
-      <nav aria-label="Primary" class="primary-nav">
-        <a class="brand-mark" href={base} aria-label="Inari — home">
-          <img src={kitsuneLogo.src} alt="" width="40" height="40" />
-          <span class="brand-name">Inari</span>
+      <nav aria-label="Primary" class="wrap primary-nav">
+        <a class="brand" href={base}>
+          <Image
+            class="brand__mark"
+            src={kitsune}
+            alt=""
+            width={44}
+            height={44}
+            loading="eager"
+          />
+          <span class="brand__name">Inari</span>
+          <span class="visually-hidden">— home</span>
         </a>
 
         <ul class="nav-links">
@@ -50,6 +86,7 @@ const bookHref = `${base}book/`;
             navLinks.map((link) => (
               <li>
                 <a
+                  class="nav-link"
                   href={link.href}
                   aria-current={isCurrent(link.href) ? "page" : undefined}
                 >
@@ -60,8 +97,15 @@ const bookHref = `${base}book/`;
           }
         </ul>
 
+        {/*
+          Book a Table is a solid red button at every viewport and sits in
+          the same flat row as everything else. There is deliberately no
+          hamburger anywhere on this site: the original hides its BOOK NOW
+          inside one at 390px, which buries the primary conversion action
+          behind a tap (decision-context §12, TASKS.md §0.5).
+        */}
         <a
-          class="book-cta"
+          class="btn btn--primary book-cta"
           href={bookHref}
           aria-current={isCurrent(bookHref) ? "page" : undefined}
         >
@@ -75,173 +119,344 @@ const bookHref = `${base}book/`;
     </main>
 
     <footer class="site-footer">
-      <div class="footer-grid">
-        <address>
-          Canberra Centre, 148 Bunda St<br />
-          (Ground Level, between Bunda Street and Scotts Crossing)<br />
-          Canberra City ACT 2601
-        </address>
+      <div class="wrap">
+        <div class="footer-grid">
+          <div class="footer-col">
+            <h2 class="footer-h">Inari</h2>
+            <address>
+              Canberra Centre, 148 Bunda St<br />
+              Ground Level, between Bunda Street and Scotts Crossing<br />
+              Canberra City ACT 2601
+            </address>
+            <p class="footer-link-row">
+              <a href="mailto:hello@inari.restaurant">hello@inari.restaurant</a>
+            </p>
+            <p class="footer-note">
+              Inari publishes no phone number, so this site lists none.
+            </p>
+          </div>
 
-        <p>
-          <a href="mailto:hello@inari.restaurant">hello@inari.restaurant</a>
-        </p>
+          <div class="footer-col">
+            <h2 class="footer-h">Hours</h2>
+            {/*
+              Stated plainly, in the two facts a diner actually needs: there
+              is no lunch service, and dinner starts at five. The original
+              puts hours in the footer only and never says the word "closed".
+            */}
+            <p class="hours-headline">Dinner only. No lunch service, any day.</p>
+            <dl class="hours">
+              <div><dt>Mon–Thu</dt><dd class="price">5–9pm</dd></div>
+              <div><dt>Fri</dt><dd class="price">5–9.30pm</dd></div>
+              <div><dt>Sat</dt><dd class="price">5–9.30pm</dd></div>
+              <div><dt>Sun</dt><dd class="price">5–9pm</dd></div>
+            </dl>
+            <p class="footer-note">
+              Lunch is by pre-booked group reservation for 10 or more guests.
+              There is no walk-in lunch service.
+            </p>
+          </div>
 
-        <p>
-          Lunch is closed every day — dinner only: Mon–Thu 5–9pm, Fri
-          5–9.30pm, Sat 5–9.30pm, Sun 5–9pm.
-        </p>
+          <div class="footer-col">
+            <h2 class="footer-h">Elsewhere</h2>
+            <ul class="footer-list">
+              <li><a href="https://inari.restaurant/">inari.restaurant</a></li>
+              <li>
+                <a href="https://www.instagram.com/inari.restaurant/">Instagram</a>
+              </li>
+              <li><a href="https://www.facebook.com/inari.cbr/">Facebook</a></li>
+              <li>
+                <a href="https://inari.restaurant/s/inari-menu-25-Jun-1.pdf">
+                  Full food menu (PDF)
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
 
-        <p class="footer-socials">
-          <a href="https://www.instagram.com/inari.restaurant/">Instagram</a>
-          <span aria-hidden="true"> · </span>
-          <a href="https://www.facebook.com/inari.cbr/">Facebook</a>
-          <span aria-hidden="true"> · </span>
-          <a href="https://inari.restaurant/">inari.restaurant</a>
-        </p>
+        <div class="footer-foot">
+          <ColourBar captioned />
+          <p class="furniture colophon">
+            Photography by Inari, used with the manager's permission and not
+            monetised — photo credit: Inari. Menu facts from Inari's June 2026
+            food menu. This is an unofficial student redesign for COMP4020 at
+            ANU and is not affiliated with Inari.
+          </p>
+        </div>
       </div>
-
-      <p class="footer-legal">
-        Photography courtesy of Inari, reproduced here with credit and not
-        monetised. This is an unofficial student redesign project for
-        COMP4020 and is not affiliated with Inari.
-      </p>
     </footer>
+    <script>
+      /*
+       * Publish the sticky header's real height as --header-h.
+       *
+       * The nav wraps from one row to two below 30rem, so its height is not
+       * a constant we can hard-code. Anything else that sticks (the menu's
+       * section rail) offsets by this variable, otherwise it renders
+       * underneath the header at 390px and silently disappears.
+       */
+      const header = document.querySelector<HTMLElement>(".site-header");
+      if (header) {
+        const publish = () =>
+          document.documentElement.style.setProperty(
+            "--header-h",
+            `${header.offsetHeight}px`,
+          );
+        publish();
+        // Feature-tested via typeof rather than `in window`: the `in` form
+        // narrows `window` itself to never in the else branch, which the
+        // typecheck rejects.
+        if (typeof ResizeObserver !== "undefined") {
+          new ResizeObserver(publish).observe(header);
+        } else {
+          window.addEventListener("resize", publish);
+        }
+      }
+    </script>
   </body>
 </html>
 
 <style>
   .skip-link {
     position: absolute;
-    left: -999px;
+    left: -9999px;
     top: 0;
-    padding: var(--space-2) var(--space-3);
-    background: var(--color-cream);
-    color: var(--color-ink);
-    border-radius: var(--radius);
     z-index: 100;
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-ink);
+    color: var(--color-paper);
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 0 0 var(--radius-sm) 0;
   }
 
   .skip-link:focus {
-    left: var(--space-3);
-    top: var(--space-3);
-    outline: 3px solid var(--color-red);
-    outline-offset: 2px;
+    left: 0;
   }
+
+  /* ---- Slug strip ---- */
+
+  .slug-strip {
+    background: var(--color-ink);
+    color: var(--color-paper);
+    padding-block: var(--space-2);
+  }
+
+  .slug-strip :global(.furniture) {
+    color: var(--color-paper);
+  }
+
+  .slug-strip :global(.slug__meta) {
+    color: var(--color-rule-strong);
+  }
+
+  /* ---- Header ---- */
 
   .site-header {
-    background: var(--color-ink);
-    color: var(--color-white);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--color-paper);
+    border-bottom: var(--hairline) solid var(--color-rule);
   }
 
-  /* Rhythm has two distinct levels, not one gap reused everywhere: a
-     generous seam between the three major groups (brand / links / CTA),
-     and a tighter one inside the links group where the items are peers. */
   .primary-nav {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--space-8);
-    padding: var(--space-4) var(--space-4);
-    max-width: 72rem;
-    margin: 0 auto;
+    gap: var(--space-3) var(--space-6);
+    padding-block: var(--space-3);
   }
 
-  .brand-mark {
+  .brand {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
-    color: var(--color-white);
-    text-decoration: none;
-    font-family: var(--font-display);
-    font-weight: 600;
-    font-size: 1.25rem;
+    gap: var(--space-3);
     margin-right: auto;
-    transition: opacity 150ms ease-out;
+    color: var(--color-ink);
+    text-decoration: none;
   }
 
-  .brand-mark:hover {
-    opacity: 0.8;
+  /* The mark is red line art on a white field. Multiply drops the white into
+     the paper so it reads as printed on the sheet rather than pasted over it. */
+  .brand__mark {
+    width: 2.25rem;
+    height: 2.25rem;
+    mix-blend-mode: multiply;
+    transition: transform var(--dur) var(--ease-out);
   }
 
-  .brand-mark img {
-    display: block;
-    border-radius: var(--radius);
+  .brand:hover .brand__mark {
+    transform: rotate(-4deg) scale(1.04);
+  }
+
+  .brand__name {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.035em;
   }
 
   .nav-links {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-4);
+    align-items: center;
+    gap: var(--space-5);
     list-style: none;
     margin: 0;
     padding: 0;
-    font-family: var(--font-functional);
+  }
+
+  .nav-link {
+    position: relative;
+    display: block;
+    padding-block: var(--space-1);
+    color: var(--color-ink);
     font-weight: 500;
-    letter-spacing: 0.01em;
-  }
-
-  .nav-links a,
-  .book-cta {
-    color: var(--color-white);
     text-decoration: none;
-    transition: color 150ms ease-out, opacity 150ms ease-out;
   }
 
-  .nav-links a {
-    text-underline-offset: 0.2em;
-  }
-
-  .nav-links a:hover {
-    color: var(--color-cream);
-    text-decoration: underline;
-  }
-
-  .nav-links a[aria-current="page"] {
-    text-decoration: underline;
-  }
-
-  /* Book a Table is the one link styled as a solid button, at every
-     viewport, and it lives in the same flat nav row as everything else —
-     the original hides its equivalent inside a hamburger at 390px
-     (decision-context §11/§12; TASKS.md 0.5), so there is deliberately no
-     hamburger here for this to hide behind. */
-  .book-cta {
+  /* A register rule under the current page: it grows from the left on hover,
+     and sits full-width when the page is current. One idea, two states. */
+  .nav-link::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    width: 100%;
     background: var(--color-red);
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius);
-    font-family: var(--font-functional);
-    font-weight: 600;
-    white-space: nowrap;
-    transition: filter 150ms ease-out, transform 150ms ease-out;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--dur) var(--ease-out);
   }
 
-  .book-cta:hover {
-    filter: brightness(1.12);
-    transform: translateY(-1px);
+  .nav-link:hover::after,
+  .nav-link[aria-current="page"]::after {
+    transform: scaleX(1);
   }
+
+  .nav-link[aria-current="page"] {
+    color: var(--color-red);
+  }
+
+  .book-cta {
+    white-space: nowrap;
+  }
+
+  /* ---- Footer ---- */
 
   .site-footer {
-    background: var(--color-cream);
-    color: var(--color-ink);
-    padding: var(--space-8) var(--space-4);
-    font-family: var(--font-functional);
+    background: var(--color-ink);
+    color: var(--color-paper);
+    padding-block: var(--space-12) var(--space-8);
+    margin-top: var(--space-16);
   }
 
   .footer-grid {
-    max-width: 72rem;
-    margin: 0 auto;
     display: grid;
-    gap: var(--space-4);
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: var(--space-8) var(--space-10);
+  }
+
+  .footer-h {
+    font-size: 1.125rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: var(--space-4);
+    color: var(--color-paper);
+  }
+
+  .footer-col :global(a) {
+    color: var(--color-paper);
+    text-decoration-color: var(--color-rule-strong);
+  }
+
+  .footer-col :global(a:hover) {
+    color: var(--color-on-red-muted);
   }
 
   address {
     font-style: normal;
+    line-height: 1.7;
   }
 
-  .footer-legal {
-    max-width: 72rem;
-    margin: var(--space-6) auto 0;
+  .footer-link-row {
+    margin-top: var(--space-3);
+  }
+
+  .footer-note {
+    margin-top: var(--space-3);
     font-size: 0.875rem;
-    opacity: 0.8;
+    color: var(--color-rule-strong);
+    max-width: 28ch;
+  }
+
+  .hours-headline {
+    font-weight: 600;
+    margin-bottom: var(--space-3);
+    max-width: 24ch;
+  }
+
+  .hours {
+    margin: 0;
+    display: grid;
+    gap: var(--space-1);
+    max-width: 16rem;
+  }
+
+  .hours div {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-4);
+    border-bottom: var(--hairline) dotted rgb(251 249 246 / 22%);
+    padding-block: var(--space-1);
+  }
+
+  .hours dt {
+    color: var(--color-rule-strong);
+  }
+
+  .hours dd {
+    margin: 0;
+  }
+
+  .footer-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .footer-foot {
+    margin-top: var(--space-10);
+    padding-top: var(--space-5);
+    border-top: var(--hairline) solid rgb(251 249 246 / 20%);
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .footer-foot :global(.furniture) {
+    color: var(--color-rule-strong);
+  }
+
+  .colophon {
+    max-width: 76ch;
+    text-transform: none;
+    letter-spacing: 0.01em;
+    line-height: 1.7;
+    font-size: 0.75rem;
+  }
+
+  @media (width <= 30rem) {
+    .primary-nav {
+      gap: var(--space-3) var(--space-4);
+    }
+
+    .nav-links {
+      order: 3;
+      width: 100%;
+      gap: var(--space-4);
+      justify-content: flex-start;
+    }
   }
 </style>

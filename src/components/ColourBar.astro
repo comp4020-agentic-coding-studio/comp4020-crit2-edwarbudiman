@@ -1,0 +1,90 @@
+---
+/*
+ * The colour bar and greyscale step wedge, quoted from Inari's press sheet.
+ *
+ * On page 1 of inari menu 25 Jun.pdf these run down the left edge and along
+ * the bottom. A printer uses them to verify ink density and neutral balance
+ * before the run — they are how a press sheet proves its own colour is
+ * right.
+ *
+ * They do the analogous job here: they are the provenance receipt for this
+ * site's palette. Every swatch below is a pixel sampled out of that document
+ * (values and method in src/styles/tokens.css), so the bar is not an
+ * illustration of the idea "we sampled the artifact" — it is the sample.
+ * That is also why it sits at the sheet's edge rather than in the content:
+ * quoting the mark means quoting where the mark goes.
+ */
+interface Props {
+  /** Show the mono caption naming the source document. */
+  captioned?: boolean;
+  class?: string;
+}
+const { captioned = false, class: className } = Astro.props;
+
+const bar = [
+  { token: "--bar-red", name: "Red" },
+  { token: "--bar-green", name: "Green" },
+  { token: "--bar-blue", name: "Blue" },
+  { token: "--bar-yellow", name: "Yellow" },
+  { token: "--bar-magenta", name: "Magenta" },
+  { token: "--bar-cyan", name: "Cyan" },
+  { token: "--bar-grey", name: "Grey" },
+  { token: "--bar-black", name: "Black" },
+];
+
+const wedge = [
+  "--wedge-1",
+  "--wedge-2",
+  "--wedge-3",
+  "--wedge-4",
+  "--wedge-5",
+  "--wedge-6",
+  "--wedge-7",
+];
+---
+
+<div class:list={["colour-bar", className]}>
+  <div class="strip" role="img" aria-label="Process colour bar sampled from Inari's printed menu: red, green, blue, yellow, magenta, cyan, grey, black.">
+    {bar.map((s) => <span class="chip" style={`background:var(${s.token})`} title={s.name} />)}
+  </div>
+  <div class="strip strip--wedge" role="img" aria-label="Greyscale step wedge sampled from the same sheet, running dark to white in seven steps.">
+    {wedge.map((t) => <span class="chip" style={`background:var(${t})`} />)}
+  </div>
+  {
+    captioned && (
+      <p class="furniture caption">
+        Colour bar + step wedge, page 1 of <span data-verbatim>inari menu 25 Jun.pdf</span>
+      </p>
+    )
+  }
+</div>
+
+<style>
+  .colour-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  .strip {
+    display: flex;
+    /* A hairline keyline, not a border per swatch — on the real sheet the
+       swatches butt directly against each other. */
+    outline: var(--hairline) solid var(--color-rule-strong);
+  }
+
+  .chip {
+    display: block;
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+
+  .strip--wedge .chip {
+    width: 0.5rem;
+  }
+
+  .caption {
+    margin: 0;
+  }
+</style>

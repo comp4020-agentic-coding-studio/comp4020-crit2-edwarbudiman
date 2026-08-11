@@ -1,93 +1,440 @@
 @import url("./tokens.css");
 
-* {
+/*
+ * Global base + the shared press-sheet vocabulary.
+ *
+ * The world is documented at the top of tokens.css. This file holds the
+ * pieces every page reuses so the four pages read as one sheet rather than
+ * four takes on a theme. Page-specific styling belongs in that page's own
+ * scoped <style> block, not here.
+ *
+ * The vocabulary, in one place:
+ *
+ *   .wrap          page container, respects the sheet's margins
+ *   .sheet         a block that carries crop marks at its four corners
+ *   .furniture     the print-furniture voice: small, mono, uppercase, tracked
+ *   .rule          a printer's hairline
+ *   .lede          the one oversized paragraph a section is allowed
+ *   .measure       caps running text at a readable line length
+ *   .btn           real button/link styling; .btn--primary is the red one
+ *   .tag           a dietary marker chip (GF / DF / V)
+ *   .price         tabular-figure price
+ *   .frame         a photograph inside a printer's keyline
+ *   .scrim         the gradient any text-over-photo must sit on
+ *   .plate         a paper panel lifted off the page
+ *
+ * Two standing rules, both from CLAUDE.md:
+ *   - text never sits on a photograph without .scrim beneath it
+ *   - anything quoting Inari verbatim carries data-verbatim
+ */
+
+*,
+*::before,
+*::after {
   box-sizing: border-box;
+}
+
+html {
+  scrollbar-color: var(--color-rule-strong) var(--color-paper-2);
 }
 
 body {
   margin: 0;
   font-family: var(--font-functional);
-  line-height: 1.6;
+  font-size: 1rem;
+  line-height: 1.65;
   color: var(--color-ink);
-  background: var(--color-white);
+  background: var(--color-paper);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizelegibility;
 }
 
-main {
-  max-width: 72rem;
-  margin: 0 auto;
-  padding: var(--space-6) var(--space-4);
+img,
+picture,
+svg,
+video {
+  display: block;
+  max-width: 100%;
 }
+
+img {
+  height: auto;
+}
+
+/* ---- Type ---------------------------------------------------------------- */
 
 h1,
 h2,
-h3 {
+h3,
+h4 {
   font-family: var(--font-display);
-  line-height: 1.15;
+  line-height: 1.04;
   letter-spacing: var(--tracking-display);
-  max-width: var(--measure);
+  font-weight: 700;
+  text-wrap: balance;
+  margin: 0;
 }
 
 h1 {
   font-size: var(--text-display-1);
-  font-weight: 500;
-  margin-block: 0 var(--space-4);
 }
 
 h2 {
   font-size: var(--text-display-2);
-  font-weight: 500;
-  margin-block: var(--space-10) var(--space-3);
 }
 
 h3 {
   font-size: var(--text-display-3);
-  font-weight: 600;
-  margin-block: var(--space-6) var(--space-2);
+  line-height: 1.12;
+}
+
+h4 {
+  font-size: 1.0625rem;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
 }
 
 p {
+  margin: 0;
+}
+
+/* Running text wants a measure; a heading already caps itself by size. */
+p,
+li {
   max-width: var(--measure);
+  text-wrap: pretty;
+}
+
+.measure {
+  max-width: var(--measure);
+}
+
+.measure-tight {
+  max-width: var(--measure-tight);
+}
+
+.lede {
+  font-size: clamp(1.125rem, 1.03rem + 0.45vw, 1.375rem);
+  line-height: 1.5;
+  color: var(--color-ink);
 }
 
 a {
   color: var(--color-red);
-  text-underline-offset: 0.15em;
+  text-decoration-thickness: from-font;
+  text-underline-offset: 0.18em;
+  transition: color var(--dur-fast) var(--ease-out);
 }
 
 a:hover {
+  color: var(--color-red-deep);
   text-decoration-thickness: 2px;
 }
 
-/* One focus style everywhere, not just the skip link — a visible outline in
-   the brand red, which measures at 3.12–6.08:1 against every background it
-   sits on (tokens.css), enough for a UI-component focus indicator (WCAG
-   1.4.11's 3:1, not the 4.5:1 body-text threshold). */
-:focus-visible {
-  outline: 3px solid var(--color-red);
-  outline-offset: 2px;
+strong,
+b {
+  font-weight: 650;
 }
 
-/* Browser surfaces carry the design too, not just the components drawn by
-   hand — the cheapest signal a page was built rather than assembled. */
+/* ---- The furniture voice --------------------------------------------------
+ * Mono is reserved for what a press sheet actually sets in mono: slugs,
+ * folios, measurements, codes, prices. Never prose.
+ */
+
+.furniture {
+  font-family: var(--font-mono);
+  font-size: var(--text-furniture);
+  letter-spacing: var(--tracking-furniture);
+  text-transform: uppercase;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--color-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.furniture--ink {
+  color: var(--color-ink);
+}
+
+.furniture--red {
+  color: var(--color-red);
+}
+
+.price {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+/* ---- Layout ---------------------------------------------------------------- */
+
+.wrap {
+  width: min(100% - (var(--space-5) * 2), var(--container));
+  margin-inline: auto;
+}
+
+.wrap--narrow {
+  width: min(100% - (var(--space-5) * 2), 58rem);
+  margin-inline: auto;
+}
+
+.section {
+  padding-block: clamp(var(--space-10), 7vw, var(--space-16));
+}
+
+.section--tight {
+  padding-block: clamp(var(--space-8), 5vw, var(--space-12));
+}
+
+.rule {
+  border: 0;
+  border-top: var(--hairline) solid var(--color-rule);
+  margin: 0;
+}
+
+/* ---- Crop marks ------------------------------------------------------------
+ * A .sheet marks its own trim edge, the way a press sheet does: four corner
+ * pairs, hairline, set outside the content. The job is to say where a block
+ * begins and ends without drawing a box around it — a border would enclose,
+ * crop marks only register the corners, which is the whole difference
+ * between a card and a sheet.
+ */
+
+.sheet {
+  position: relative;
+}
+
+.sheet::before,
+.sheet::after {
+  content: "";
+  position: absolute;
+  inset: calc(var(--trim-gap) * -1);
+  pointer-events: none;
+
+  /* Two corners per pseudo-element, drawn as gradients so the marks need no
+     extra DOM. */
+  background-repeat: no-repeat;
+  background-image:
+    linear-gradient(var(--color-rule-strong), var(--color-rule-strong)),
+    linear-gradient(var(--color-rule-strong), var(--color-rule-strong)),
+    linear-gradient(var(--color-rule-strong), var(--color-rule-strong)),
+    linear-gradient(var(--color-rule-strong), var(--color-rule-strong));
+}
+
+/* Horizontal ticks at all four corners… */
+.sheet::before {
+  background-size: var(--mark-size) var(--hairline);
+  background-position: left top, right top, left bottom, right bottom;
+}
+
+/* …and the vertical ticks that complete them. A real sheet is marked at
+   every corner; two corners reads as a stray bracket. */
+.sheet::after {
+  background-size: var(--hairline) var(--mark-size);
+  background-position: left top, right top, left bottom, right bottom;
+}
+
+/* ---- Controls --------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 2.875rem;
+  padding: var(--space-3) var(--space-5);
+  border: var(--hairline) solid var(--color-ink);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-ink);
+  font-family: var(--font-functional);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.btn:hover {
+  background: var(--color-ink);
+  color: var(--color-paper);
+  transform: translateY(-1px);
+}
+
+.btn--primary {
+  background: var(--color-red);
+  border-color: var(--color-red);
+  color: var(--color-paper);
+}
+
+.btn--primary:hover {
+  background: var(--color-red-deep);
+  border-color: var(--color-red-deep);
+  color: var(--color-paper);
+}
+
+.btn--lg {
+  min-height: 3.375rem;
+  padding: var(--space-4) var(--space-8);
+  font-size: 1.0625rem;
+}
+
+.btn[disabled],
+.btn[aria-disabled="true"] {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn[disabled]:hover,
+.btn[aria-disabled="true"]:hover {
+  background: transparent;
+  color: var(--color-ink);
+  transform: none;
+}
+
+/* ---- Dietary markers ---------------------------------------------------------
+ * GF / DF / V are Inari's dietary markers, not allergen guarantees. They are
+ * reproduced exactly as printed and never inferred — see CLAUDE.md and
+ * src/data/menu.ts. Every one carries data-dietary so spec/crit-2.test.ts
+ * can assert the value is one of exactly three.
+ */
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.5rem;
+  padding: 0 var(--space-2);
+  border: var(--hairline) solid var(--color-rule-strong);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-furniture);
+  letter-spacing: var(--tracking-furniture);
+  font-weight: 500;
+  color: var(--color-ink-muted);
+  background: transparent;
+}
+
+.tag--origin {
+  border-style: dashed;
+}
+
+/* ---- Photography -------------------------------------------------------------- */
+
+.frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--color-paper-2);
+}
+
+.frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Any text over a photograph sits on this. Non-negotiable: unscrimmed white
+   on busy food photography is the original site's worst legibility fault. */
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--scrim);
+  pointer-events: none;
+}
+
+.plate {
+  background: var(--color-paper);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sheet);
+}
+
+/* ---- Accessibility ------------------------------------------------------------- */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-red);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* On red, the red ring would vanish — switch to paper. */
+.btn--primary:focus-visible,
+[data-on-red] :focus-visible {
+  outline-color: var(--color-paper);
+}
+
+/* ---- Browser surfaces -----------------------------------------------------------
+ * The parts we did not draw still belong to the design.
+ */
+
 ::selection {
   background: var(--color-red);
-  color: var(--color-white);
+  color: var(--color-paper);
 }
 
 ::-webkit-scrollbar {
   width: 12px;
+  height: 12px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-cream);
+  background: var(--color-paper-2);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-ink);
-  border-radius: var(--radius);
-  border: 3px solid var(--color-cream);
+  background: var(--color-rule-strong);
+  border: 3px solid var(--color-paper-2);
+  border-radius: 999px;
 }
 
-html {
-  scrollbar-color: var(--color-ink) var(--color-cream);
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-ink-muted);
+}
+
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+  caret-color: var(--color-red);
+}
+
+::placeholder {
+  color: var(--color-ink-muted);
+  opacity: 1;
+}
+
+/* ---- Motion ---------------------------------------------------------------------
+ * One authored moment per surface. Everything collapses under a reduced-motion
+ * preference — including the book's page turn, which must still change pages,
+ * just without animating.
+ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
