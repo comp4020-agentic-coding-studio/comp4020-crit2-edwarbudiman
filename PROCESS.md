@@ -24,8 +24,21 @@ green throughout, because the invariant tests don't inspect nav link targets
 directly is what actually caught it. Fixed in
 [`90a9dbc`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit2-edwarbudiman/commit/90a9dbc).
 
+Flipping the repo public and dispatching `checks` then surfaced a second,
+related issue: the `check` job's "Check internal links" step ran
+`linkinator ./dist`, which serves `dist/` at its own local root — so the same
+base-prefixed nav hrefs (`/comp4020-crit2-edwarbudiman/about/`) that are
+correct once GitHub Pages serves the repo under that path 404 locally,
+because `dist/` has no matching subdirectory on disk. `pnpm build`/`pnpm check`
+don't run linkinator, so this only showed up in the CI run itself. Fixed by
+adding a `linkinator.config.json` that rewrites the base prefix out of URLs
+before linkinator resolves them against the local tree, so the same
+`pnpm dlx linkinator ./dist --silent` command in `checks.yml` needed no
+changes. Fixed in
+[`23ae9d1`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit2-edwarbudiman/commit/23ae9d1).
+
 ## Next
 
-Push this commit, flip the repo public, and confirm the GitHub Actions
-`deploy` job actually publishes the two-page site to the live Pages URL —
-then start the real redesign work on top of a confirmed-working pipeline.
+Push this commit, re-dispatch `checks`, and confirm the `deploy` job actually
+publishes the two-page site to the live Pages URL — then start the real
+redesign work on top of a confirmed-working pipeline.
