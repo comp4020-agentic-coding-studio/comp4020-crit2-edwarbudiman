@@ -1,0 +1,134 @@
+/*
+ * Design tokens — Inari redesign (crit 2)
+ *
+ * Source priority (decision-context §2): logo/brand assets > brand material
+ * > the physical room > current site content > new tokens invented here.
+ * Every value below says where it came from. Nothing here is an eyeballed
+ * guess — colours were sampled from actual pixels with ImageMagick
+ * (`magick <file> -resize 100x100 -colors N -unique-colors txt:-`), contrast
+ * was measured with the WCAG relative-luminance formula, not eyeballed.
+ */
+
+:root {
+  /* ---- Colour: brand ------------------------------------------------- */
+
+  /* Inari's own booking widget config (?colors=hex%2Cc41411), Appendix A.
+     Confirmed as the logo's dominant red: sampling inari-logo.webp's fill
+     gives #BD0707/#C42827 depending on webp compression noise — #C41411
+     sits inside that cluster, so the published widget value is trustworthy
+     and is what we use verbatim rather than re-sampling a lossy asset. */
+  --color-red: #c41411;
+
+  /* Pure white and near-black, used only as the two text colours that are
+     safe on red (see contrast notes below) and as the mask/wordmark colour
+     in the logo itself (inari-logo.webp is red-on-white line art). */
+  --color-white: #fff;
+
+  /* Ink: a warm near-black sampled from the photography's own shadow tone
+     rather than true #000 — main-potagonian-tootfish.webp and chef-prep.webp
+     both crush to ~#040301/#130904/#130f0c in their darkest pixels. Used as
+     the primary text/background dark, one step warmer than pure black. */
+  --color-ink: #150f0b;
+
+  /* ---- Colour: sampled from the photography ---------------------------- */
+
+  /* Moss/olive: the ceramic plate under the toothfish
+     (main-potagonian-tootfish.webp), sampled directly — #7e8124. A real
+     plate colour from the room's own tableware, not an invented "Japanese
+     green". Accent only: 3.67:1 on cream fails AA for body text (see
+     contrast notes), so it is restricted to large text, borders, tags. */
+  --color-moss: #7e8124;
+
+  /* Warm timber: the wooden knife-handle in chef-prep.webp, sampled
+     directly — #a26b3f. Same restriction as moss: decorative/large-text use
+     only, not body copy on light backgrounds. */
+  --color-timber: #a26b3f;
+
+  /* Cream: the pale ceramic rim on the same toothfish plate
+     (sampled #cac1a3), lightened for use as a page background — a tint of
+     the sampled ceramic, not an arbitrary off-white. */
+  --color-cream: #f6f0e6;
+
+  /* ---- Contrast — measured, not eyeballed ------------------------------
+   * WCAG 2.1 relative-luminance contrast ratio, computed directly (see
+   * PROCESS.md for the one-off script). AA requires 4.5:1 for body text,
+   * 3:1 for large text (≥24px / ≥19px bold) and UI components.
+   *
+   *   white  on red   (#fff on #c41411)   6.08:1  — passes AA body text.
+   *   cream  on red   (#f6f0e6 on #c41411) 5.36:1  — passes AA body text.
+   *   black  on red   (#000 on #c41411)   3.46:1  — FAILS AA body text.
+   *   red    on ink   (#c41411 on #150f0b) 3.12:1  — large text/UI only.
+   *   moss   on cream (#7e8124 on #f6f0e6) 3.67:1  — large text/UI only.
+   *   moss   on ink   (#7e8124 on #150f0b) 4.56:1  — passes AA body text.
+   *   timber on cream (#a26b3f on #f6f0e6) 3.93:1  — large text/UI only.
+   *   ink    on cream (#150f0b on #f6f0e6) 16.7:1  — passes everywhere.
+   *
+   * Rule that follows: text on red is always white or cream, never black.
+   * Moss and timber are accents (borders, tags, large display type), never
+   * small body copy on a light background. This is also why any text over
+   * a photograph needs a scrim (§0.4) — none of the photographed tones
+   * above are safe under small white or dark text on their own.
+   */
+
+  /* ---- Typography ------------------------------------------------------ */
+
+  /* The original site's own type, identified per project-description §3.3
+     ("if the original brand typeface can be identified... it should be
+     preferred") by fetching inari.restaurant's own stylesheet rather than
+     guessing: Adobe Fonts "Uchiyama", a brush-calligraphy face, for
+     display, and "Louis"/"Louis Bold" for body. Both are Typekit-licensed
+     to Squarespace's site, not embeddable on a plain static GitHub Pages
+     site without our own Adobe Fonts kit — so project-description §3.3's
+     fallback applies: "a compatible alternative should be selected by
+     comparing its proportions, character, weight, and overall personality
+     with the existing identity." Uchiyama is also exactly the "brush or
+     decorative Asian-style font" the brief and decision-context §5 reject
+     by name, so it would be the wrong direction even if it were licensable.
+     The logo's own wordmark is a plain geometric block-cap sans with no
+     brush character, which is the actual brand signal to follow.
+   *
+   * Display: Fraunces — a serif with real personality (soft, slightly
+   * wonky curves) without being a script or an "Asian" pastiche. Pairs
+   * "tradition" (serif) with "rebellion" (its irregular, bouncy detailing)
+   * per decision-context §7, and it is not Uchiyama.
+   * Functional: Inter — a highly-legible humanist sans for body copy, UI,
+   * prices and dietary tags at small sizes. Loaded in Layout.astro (§0.5).
+   */
+  --font-display: "Fraunces", "Iowan Old Style", "Georgia", "Times New Roman", serif;
+  --font-functional: "Inter", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto",
+    "Helvetica", "Arial", sans-serif;
+
+  /* Type scale: three display steps (h1/h2/h3) plus the running-text
+     measure. Fluid via clamp() so the display sizes track viewport width
+     instead of jumping at a breakpoint; -0.03em tracking on the display
+     face per the craft floor (Fraunces gets bouncier, not tighter, past
+     -0.04em). --measure caps body copy at a readable line length. */
+  --text-display-1: clamp(2.5rem, 2rem + 2.5vw, 4.25rem);
+  --text-display-2: clamp(1.75rem, 1.5rem + 1.2vw, 2.5rem);
+  --text-display-3: 1.375rem;
+  --tracking-display: -0.03em;
+  --measure: 68ch;
+
+  /* ---- Spacing ----------------------------------------------------------
+   * 8px base scale, generous at the top end on purpose — decision-context
+   * §6: negative space is an active part of the composition, not filler
+   * used because the photo library is limited (§8).
+   */
+  --space-1: 0.25rem; /* 4px  — tight inline gaps */
+  --space-2: 0.5rem; /* 8px  */
+  --space-3: 0.75rem; /* 12px */
+  --space-4: 1rem; /* 16px — base */
+  --space-5: 1.5rem; /* 24px */
+  --space-6: 2rem; /* 32px */
+  --space-8: 3rem; /* 48px */
+  --space-10: 4rem; /* 64px */
+  --space-12: 6rem; /* 96px  — section padding */
+  --space-16: 9rem; /* 144px — large negative-space breaks */
+
+  /* ---- Shape -------------------------------------------------------------
+   * One radius, echoing the logo's own rounded-square badge shape
+   * (inari-logo.webp) so UI chrome (cards, buttons) reads as the same
+   * family as the mark rather than an unrelated system default.
+   */
+  --radius: 0.75rem;
+}

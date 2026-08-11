@@ -1,16 +1,93 @@
+@import url("./tokens.css");
+
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
-  padding: 2rem;
-  font-family: system-ui, sans-serif;
+  font-family: var(--font-functional);
   line-height: 1.6;
-  color: #1a1a1a;
+  color: var(--color-ink);
+  background: var(--color-white);
 }
 
 main {
-  max-width: 40rem;
+  max-width: 72rem;
   margin: 0 auto;
+  padding: var(--space-6) var(--space-4);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  line-height: 1.15;
+  letter-spacing: var(--tracking-display);
+  max-width: var(--measure);
+}
+
+h1 {
+  font-size: var(--text-display-1);
+  font-weight: 500;
+  margin-block: 0 var(--space-4);
+}
+
+h2 {
+  font-size: var(--text-display-2);
+  font-weight: 500;
+  margin-block: var(--space-10) var(--space-3);
+}
+
+h3 {
+  font-size: var(--text-display-3);
+  font-weight: 600;
+  margin-block: var(--space-6) var(--space-2);
+}
+
+p {
+  max-width: var(--measure);
 }
 
 a {
-  color: #0b5fff;
+  color: var(--color-red);
+  text-underline-offset: 0.15em;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* One focus style everywhere, not just the skip link — a visible outline in
+   the brand red, which measures at 3.12–6.08:1 against every background it
+   sits on (tokens.css), enough for a UI-component focus indicator (WCAG
+   1.4.11's 3:1, not the 4.5:1 body-text threshold). */
+:focus-visible {
+  outline: 3px solid var(--color-red);
+  outline-offset: 2px;
+}
+
+/* Browser surfaces carry the design too, not just the components drawn by
+   hand — the cheapest signal a page was built rather than assembled. */
+::selection {
+  background: var(--color-red);
+  color: var(--color-white);
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-cream);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-ink);
+  border-radius: var(--radius);
+  border: 3px solid var(--color-cream);
+}
+
+html {
+  scrollbar-color: var(--color-ink) var(--color-cream);
 }

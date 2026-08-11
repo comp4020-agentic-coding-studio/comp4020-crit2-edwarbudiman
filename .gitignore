@@ -3,6 +3,10 @@ dist/
 .astro/
 *.log
 
+# raw 60M jpg photo library — the webp set in src/assets/photos/ is what ships;
+# never commit this directory or its history
+photos-inari-menu/
+
 # editor and OS junk
 .DS_Store
 ._*
