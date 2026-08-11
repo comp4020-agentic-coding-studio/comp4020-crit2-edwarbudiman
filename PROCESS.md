@@ -21,6 +21,8 @@ This file is a reading guide. It points at the commits; it doesn't replace them.
 | This week's own tests, written before the pages | `spec/crit-2.test.ts` |
 | Every colour and type value, with the source it came from | `src/styles/tokens.css` |
 | The brief, written before any code | `inari-website-project-description.md`, `inari-website-decision-context.md` |
+| The menu data, and what it refuses to infer | `src/data/menu.ts` |
+| The book engine, written to work with JavaScript off | `src/pages/menu.astro` |
 | The reflection | `reflections/crit-2.md` |
 
 ## The moments that mattered
@@ -52,6 +54,48 @@ Cited: the finding and the 16-page running order it produced, in `TASKS.md`
 (§6 audit list, Appendix C), and the two brief documents tracked alongside it as
 evidence the brief preceded the build —
 [`9f3ccb3`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit2-edwarbudiman/commit/9f3ccb3).
+
+### The browser found two bugs that every check had passed
+
+With the four pages built, `pnpm check` was green: types, build, both linters,
+all 65 tests. I opened the built site in Chrome anyway, because `CLAUDE.md`
+says the rendered page is the truth and my model of it isn't.
+
+Two defects were sitting there that no check could see. The menu jumped about a
+thousand pixels down the page on load — Chrome keeps trying to resolve a
+document's fragment as late-loading content arrives, so the `#dish-id` my book
+engine wrote with `replaceState` during startup got acted on once the
+photographs finished, and the page scrolled itself. And at 390px the section
+rail had vanished: it was sticky at a hard-coded `4.25rem`, under a header that
+wraps to two rows on a phone and is actually 122px tall, so it was pinned
+permanently behind the nav.
+
+The obvious fix for the second one was to nudge the offset until it looked
+right. Instead the header now measures itself and publishes `--header-h`, so
+anything sticking below it is correct at any viewport and after any font
+swap. Both bugs were invisible in the source and invisible to the test suite;
+they were only ever going to be found by looking. Fixed in
+[`266bcde`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit2-edwarbudiman/commit/266bcde).
+
+### The spec test that was wrong, and how I proved it
+
+Spec line 4 says the booking form must never post anywhere. My own test for it
+went red against a form that has no `action` and no `method` at all — which is
+the strongest possible pass, because a form that names nowhere to post cannot
+post. `getAttribute` returns `null` there, `null` is typeof `"object"`, and
+`.not.toMatch()` throws on a non-string. The test errored on exactly the markup
+it was written to reward.
+
+`CLAUDE.md` says to prove whether the site or the test is wrong before changing
+either, so I dumped every `<form>` tag in `dist/` and read the attributes
+directly before touching anything. The site was right. Then, because relaxing a
+check is how a check quietly stops working, I mutation-tested the fix: injected
+`action="https://evil.example.com/post"` and `method="post"` into the built
+HTML, confirmed both assertions went red, restored, confirmed both went green.
+The same discipline caught a second one — teaching stylelint about BEM
+modifiers, then proving `.badCamelCase` still fails and `.good-name__el--mod`
+passes.
+[`266bcde`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit2-edwarbudiman/commit/266bcde).
 
 ### The harness gap, caught and closed before any page work
 
