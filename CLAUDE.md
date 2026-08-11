@@ -160,3 +160,54 @@ catching you out, a fact about the stack the agent keeps getting wrong --- write
 it down here. Growing this file is the work of harness engineering, and the gap
 between this boilerplate and your own version is part of what your prototype
 says about the developer you're becoming.
+
+## Inari redesign (crit 2)
+
+This week's prototype is a redesign of Inari's website (a Canberra restaurant).
+These rules are the harness for that build --- committed before any page work,
+per the plan in `TASKS.md`.
+
+Carried forward from crit 1, generalised:
+
+- **Derive the design from the artifact, never from what *reads as* right.**
+  Crit 1's version: sample the colour from the game, not from an idea of 1996.
+  This week's version: sample from Inari's real mark, photography and room, not
+  from what reads as a good Japanese restaurant site. The failure has a name in
+  the brief --- "generic Japanese restaurant template" --- and it's the thing
+  to actively avoid, not a neutral default.
+- **If a decorative element cannot answer "what job does this do", it does not
+  ship.**
+- **Every factual claim carries a source.**
+- **When a check goes red, prove whether the site or the test is wrong before
+  changing either.** If you relax a check, mutation-test it: break the thing,
+  confirm red, restore, confirm green.
+- **Check a spec belief against the published spec, not against the agent.**
+
+New for this week:
+
+- **Never invent a fact about Inari.** Verified sources are exactly two:
+  `inari.restaurant`, and the June 2026 food menu PDF
+  (`https://inari.restaurant/s/inari-menu-25-Jun-1.pdf`). Where a fact is
+  missing, cut the section --- a placeholder on a public URL under a real
+  restaurant's name is a false claim, not a neutral gap.
+- **No phone number exists.** Inari publishes none. Contact is
+  `hello@inari.restaurant` only. Never add one, even a placeholder.
+- **GF / DF / V are Inari's dietary markers, not allergen guarantees.**
+  Reproduce them exactly as the menu PDF states them. Never infer, extend, or
+  generate dietary, allergen, or ingredient data for any dish. Always carry
+  Inari's advisory verbatim: "Please advise your waiter of any dietary
+  requirements or allergies you may have."
+- **No AI-generated food, venue, or staff imagery.** Real photography only,
+  sourced from the provided photo library.
+- **"Tradition × Rebellion" is a design test, not copy** --- and it's where the
+  meat-proxy risk hides. Left unguarded it produces oversized type + a red
+  accent + an asymmetric grid, which *is* the current median restaurant
+  look. Artifact-grounding (see above) is its guardrail, not a slogan to print
+  on the page.
+- **Booking never posts anywhere.** The Book a Table page is static with no
+  backend: no `action` pointing off-page, no `method="post"`, no fetch to a
+  non-static endpoint.
+- **The Astro base is `/comp4020-crit2-edwarbudiman/`.** Every internal link
+  must be prefixed with `import.meta.env.BASE_URL` or it 404s on the live
+  site while looking fine on the dev server. Already bitten once this repo ---
+  see commits `90a9dbc`, `23ae9d1`, `e88ff47`.
